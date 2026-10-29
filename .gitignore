@@ -1,0 +1,5 @@
+# 설치 파일·시스템 파일은 올리지 않음
+*.exe
+desktop.ini
+Thumbs.db
+.DS_Store

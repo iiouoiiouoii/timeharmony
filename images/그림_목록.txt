@@ -1,0 +1,111 @@
+사라진 멜로디: 타임 하모니 — 그림 목록 (그림 AI에게 요청할 내용)
+================================================================
+
+이 폴더(images)에 아래 "파일 이름" 그대로 그림을 넣으면 게임의 기본 그림 대신 나옵니다.
+없는 그림은 기존 그림을 그대로 쓰므로, 일부만 넣어도 괜찮습니다.
+넣은 뒤 게임의 [선생님 페이지] → [그림 파일 상태]에서 "연결됨"인지 확인하세요.
+
+■ 규격
+- 배경: 가로 16:9 (1920×1080 권장), jpg 또는 png. 사람 없이, 글자 없이.
+       화면 아래쪽 1/3은 대화창에 가려지니 중요한 물건은 가운데~위쪽에.
+       인물이 가운데 서므로 가운데는 비워 두기.
+- 인물: 세로 2:3 (1024×1536 권장), 배경이 투명한 png. 허리 위 상반신, 정면, 화면 가운데.
+       모든 인물이 같은 크기·같은 위치(머리 꼭대기가 위에서 10% 정도)로 그려져야 자연스러워요.
+       그림 AI가 투명 배경을 못 만들면 흰 배경으로 받은 뒤 배경 지우기 도구
+       (remove.bg, 포토스케이프X, 캔바 '배경 제거' 등)로 지워 주세요.
+- 표정: 'normal'(기본)은 꼭 필요하고, 나머지 표정은 있으면 좋아요. 없으면 normal 그림을 대신 씁니다.
+
+■ 그림체를 통일하는 요령
+1) 모든 요청 앞에 아래 [공통 그림체] 문장을 똑같이 붙이세요.
+2) 인물은 normal 그림을 먼저 만들고, 그 그림을 첨부해서 "이 캐릭터와 똑같은 사람, 옷, 그림체로 표정만 ○○로 바꿔 줘"라고 요청하세요.
+3) 영어 프롬프트가 더 정확하게 나오는 경우가 많아요. 아래 영어 문장을 그대로 복사해 쓰세요.
+
+[공통 그림체 — 인물]
+Korean visual novel character art, anime style, clean lineart, soft cel shading, warm painterly lighting, waist-up portrait, front view, centered, full head visible with space above, transparent background, 2:3 vertical, high quality
+
+[공통 그림체 — 배경]
+Visual novel background art, painterly anime style, detailed, warm cinematic lighting, eye-level view, no people, no text, empty space in the center, 16:9 wide
+
+────────────────────────────────────────
+1. 배경 9장
+────────────────────────────────────────
+
+bg_room.jpg — 주인공의 방 (월요일 아침)
+  A cozy Korean teenager's bedroom in early morning, sunrise light through a large window with light-blue curtains, a K-pop concert poster on the wall, a desk with a smartphone and a lamp, the corner of a bed with a blue blanket, soft golden morning light
+
+bg_classroom.jpg — 교실
+  A bright Korean middle school classroom during the day, green chalkboard at the front with chalk notes about music class, rows of wooden desks, large windows with blue sky on the right, wall clock, old speaker box near the ceiling
+
+bg_hallway.jpg — 방과 후 복도
+  An empty Korean school hallway after school at dusk, long corridor in one-point perspective, orange sunset light pouring through windows on the left onto the floor, a door at the far end glowing warmly with a small sign, quiet and slightly mysterious mood
+
+bg_musicroom.jpg — 음악실 (신비한 분위기)
+  A school music room at dusk, wooden wall panels, a row of five framed classical composer portraits on the wall (faces in shadow), an upright piano on the right with an old silver cassette tape player on top glowing with soft cyan light, music stands, purple-orange evening window, mysterious magical atmosphere
+
+bg_med.jpg — 중세: 1150년경 독일 루페르츠베르크 수녀원
+  Interior of a 12th-century Romanesque Benedictine abbey church in Germany, thick stone walls, round arches, a colorful round stained-glass rose window glowing in the center, candles on iron stands, a wooden lectern with an open illuminated manuscript showing square neume notation, golden candlelight and dusty light beams, historically accurate medieval
+
+bg_bar.jpg — 바로크: 1717년 11월 독일 바이마르 궁정 구금실
+  A small 18th-century German holding cell in a palace in winter (Weimar, 1717), grey stone brick walls, a small high barred window with cold moonlight beam, a heavy wooden door with iron bars on the left, a simple wooden table with a candle, quill, inkwell and scattered handwritten music manuscript papers, cold blue night with warm candle glow, historically accurate Baroque
+
+bg_cla.jpg — 고전: 1802년 가을 빈 근교 하일리겐슈타트 서재
+  A modest early 19th-century Viennese country-house study in autumn (Heiligenstadt, 1802), striped wallpaper, a wooden fortepiano with messy music sheets on the left, a writing desk with quill and an unfinished letter, a large window showing golden-red autumn trees and vineyards on hills, warm late-afternoon light, historically accurate
+
+bg_rom.jpg — 낭만: 1847년 비 오는 밤 파리 살롱
+  An elegant 1840s Parisian salon at night in the rain, dark plum walls with gilded moldings, tall window with rain streaks and glowing Paris rooftops outside, heavy red velvet curtains, a black grand piano with a three-candle candelabra, a small framed portrait on the wall, melancholic romantic mood, historically accurate
+
+bg_mod.jpg — 현대: 1952년 8월 미국 우드스톡 매버릭 콘서트홀
+  Interior of the rustic wooden Maverick Concert Hall in Woodstock, New York in 1952, a barn-like hall made of rough wooden planks with exposed roof beams, large windows showing green summer forest, a small wooden stage with a black grand piano, wooden audience benches, soft daylight, slightly vintage 1950s photo color
+
+────────────────────────────────────────
+2. 길잡이 인물 2명
+────────────────────────────────────────
+
+ch_yun_*.png — 윤서 (주인공의 같은 반 친구, 밝고 K-POP을 좋아함)
+  Korean middle school girl, 15 years old, long straight dark brown hair, small yellow star hairpin, navy school blazer, white shirt, red ribbon tie, white wired earphones hanging around her neck, friendly and lively
+
+  표정 5장:
+  ch_yun_normal.png   — 기본, 살짝 웃는 얼굴 (neutral friendly expression)
+  ch_yun_smile.png    — 활짝 웃음 (big happy smile, eyes closed)
+  ch_yun_shock.png    — 깜짝 놀람 (surprised, wide eyes, open mouth)
+  ch_yun_sad.png      — 시무룩 (sad, worried eyebrows)
+  ch_yun_serious.png  — 진지함 (serious, determined)
+
+ch_harmo_*.png — 하모 (카세트테이프의 정령, 시간 여행 안내자)
+  Magical girl spirit of a cassette tape, about 14 years old, short silver-lavender bob hair, amber eyes, gold over-ear headphones, a small navy cassette-tape-shaped hair clip, cream dress with a horizontal stripe of five colors (gold, red, blue, pink, teal), lower body fading into glowing light like a hologram, soft cyan glowing aura and small sparkles
+
+  표정 3장:
+  ch_harmo_normal.png  — 기본 (gentle confident expression)
+  ch_harmo_smile.png   — 밝게 웃음 (cheerful wink or big smile)
+  ch_harmo_serious.png — 진지함 (serious, urgent)
+
+────────────────────────────────────────
+3. 작곡가 5명 (그 시대, 그 나이에 맞게)
+────────────────────────────────────────
+표정은 3장씩: _normal(기본), _happy(마음을 연 미소), _sad(근심·슬픔)
+공통으로 붙이기: historically accurate costume for the period, gentle anime style but recognizable as the real person
+
+ch_hildegard_*.png — 힐데가르트 폰 빙엔 (1150년경, 50대)
+  Hildegard of Bingen, 12th-century German Benedictine abbess in her fifties, black Benedictine habit, white wimple and black veil, simple wooden cross pendant, wise, calm and kind face
+
+ch_bach_*.png — 요한 제바스티안 바흐 (1717년, 32세)
+  Johann Sebastian Bach at age 32 in 1717, white powdered curly baroque wig, brown 18th-century coat with gold buttons, white cravat, round face, strong eyebrows, stern but warm
+
+ch_beethoven_*.png — 루트비히 판 베토벤 (1802년, 31세)
+  Ludwig van Beethoven at age 31 in 1802, wild messy dark brown hair, sideburns, intense eyes, dark green tailcoat with high collar, white shirt and loosely tied cravat, passionate and stubborn look
+
+ch_chopin_*.png — 프레데리크 쇼팽 (1847년, 37세)
+  Frédéric Chopin at age 37 in 1847, pale and thin face, wavy light-brown hair parted to the side, black tailcoat, high white collar, black silk cravat, elegant but sickly, melancholic eyes
+
+ch_cage_*.png — 존 케이지 (1952년, 39세)
+  John Cage at age 39 in 1952, short dark hair, clean-shaven, friendly wide smile with laugh lines, simple 1950s American open-collar shirt with a casual jacket, holding nothing, cheerful and curious
+
+────────────────────────────────────────
+요청 예시 (그대로 복사해서 쓰기)
+────────────────────────────────────────
+[인물 첫 장]
+Korean visual novel character art, anime style, clean lineart, soft cel shading, warm painterly lighting, waist-up portrait, front view, centered, full head visible with space above, transparent background, 2:3 vertical, high quality.
+Johann Sebastian Bach at age 32 in 1717, white powdered curly baroque wig, brown 18th-century coat with gold buttons, white cravat, round face, strong eyebrows, stern but warm. Historically accurate costume. Neutral expression.
+
+[표정 바꾸기 — 첫 장을 첨부하고]
+Same character, same outfit, same art style, same size and position. Change only the facial expression to: a warm, relieved smile.

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사라진 멜로디: 타임 하모니 - 게임 전 활동지</title>
+<style>
+  @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+  @page { size: A4 portrait; margin: 10mm 12mm; }
+  * { box-sizing: border-box; }
+  body { margin:0; color:#171717; font-family:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo","NanumGothic",sans-serif; font-size:10.5pt; line-height:1.45; background:#eee; }
+  .toolbar { max-width:210mm; margin:12px auto; display:flex; gap:8px; justify-content:flex-end; }
+  button { padding:9px 15px; border:1px solid #555; background:#fff; border-radius:5px; cursor:pointer; font-size:14px; }
+  .page { width:186mm; min-height:277mm; margin:12px auto; padding:0; background:#fff; }
+  h1,h2,h3,p { margin-top:0; }
+  h1 { font-size:21pt; margin-bottom:3mm; letter-spacing:-.5px; }
+  h2 { font-size:14pt; margin:0 0 2.5mm; padding-bottom:1.2mm; border-bottom:1.5px solid #222; }
+  h3 { font-size:11pt; margin:0 0 1.5mm; }
+  .sub { font-size:10pt; color:#444; margin-bottom:4mm; }
+  .name-row { display:flex; gap:7mm; border:1px solid #777; padding:2.5mm 3mm; margin-bottom:4mm; }
+  .blank { display:inline-block; border-bottom:1px solid #777; min-width:26mm; height:5mm; }
+  .mission { border:1.5px solid #222; padding:3mm 4mm; margin-bottom:4mm; }
+  .mission strong { font-size:11pt; }
+  .section { margin-bottom:4mm; }
+  .timeline { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0; font-size:9pt; }
+  .timeline th,.timeline td { border:1px solid #777; padding:2mm 1.5mm; vertical-align:top; }
+  .timeline th { background:#eee; text-align:center; }
+  .write-line { border-bottom:1px solid #aaa; height:7mm; }
+  .small-line { border-bottom:1px solid #aaa; height:6mm; }
+  .era-grid { display:grid; grid-template-columns:1fr 1fr; gap:2.5mm; }
+  .era { border:1px solid #777; padding:2.5mm 3mm; min-height:32mm; break-inside:avoid; }
+  .era:last-child { grid-column:1 / -1; min-height:27mm; }
+  .era .tag { font-size:8pt; letter-spacing:.5px; color:#444; font-weight:bold; }
+  .era p { margin:1mm 0 0; font-size:9.2pt; }
+  .q { margin:2mm 0 1mm; font-weight:600; }
+  .options { font-size:9.3pt; margin:1mm 0; }
+  .answer { display:inline-block; border-bottom:1px solid #888; min-width:30mm; height:5mm; }
+  .box { border:1px solid #888; padding:2.5mm 3mm; }
+  .checkrow { display:flex; flex-wrap:wrap; gap:2mm 5mm; }
+  .check { white-space:nowrap; }
+  .check::before { content:"□ "; font-size:12pt; }
+  .footer { margin-top:3mm; border-top:1px solid #aaa; padding-top:1.5mm; font-size:8pt; color:#555; display:flex; justify-content:space-between; }
+  .page2 { page-break-before:always; }
+  .teacher { page-break-before:always; font-size:9.5pt; }
+  .teacher h1 { font-size:18pt; }
+  .key-table { border-collapse:collapse; width:100%; font-size:9pt; }
+  .key-table td,.key-table th { border:1px solid #888; padding:2mm; vertical-align:top; }
+  .key-table th { background:#eee; }
+  .note { font-size:9pt; color:#444; }
+  @media print {
+    @page { size: A4 portrait; margin: 10mm 12mm; }
+    html, body { margin:0 !important; padding:0 !important; width:auto; background:#fff; }
+    body { font-size:10pt; line-height:1.4; }
+    .toolbar { display:none !important; }
+    .page { width:100%; height:auto; min-height:0; max-height:none; margin:0; padding:0; background:#fff; }
+    .page:not(.teacher) { break-after:page; page-break-after:always; }
+    .page2 { break-before:auto !important; page-break-before:auto !important; font-size:9.5pt; line-height:1.32; }
+    .teacher { display:none !important; }
+    .page2 h1 { font-size:19pt; margin-bottom:1.8mm; letter-spacing:-.3px; }
+    .page2 h2 { font-size:12.5pt; margin:0 0 1.8mm; padding-bottom:.8mm; border-bottom:1px solid #222; }
+    .page2 h3 { font-size:10pt; margin:0 0 1mm; }
+    .page2 p { margin-bottom:1.2mm; }
+    .page2 .sub { font-size:9pt; margin-bottom:2.5mm; }
+    .page2 .section { margin-bottom:2mm; }
+    .page2 .timeline { margin:1.3mm 0; font-size:8.3pt; }
+    .page2 .timeline th,.page2 .timeline td { padding:1mm .8mm; }
+    .page2 .write-line { height:4mm; }
+    .page2 .small-line { height:4mm; }
+    .page2 .q { margin:1mm 0 .5mm; }
+    .page2 .answer { min-width:24mm; height:4.2mm; }
+    .page2 .box { padding:1.5mm 2mm; }
+    .page2 .checkrow { gap:1mm 3mm; }
+    .page2 .footer { margin-top:1.8mm; padding-top:.9mm; font-size:7.5pt; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <span style="align-self:center;font-size:13px;color:#333">학생용 활동지는 A4 세로 2쪽으로 인쇄됩니다. 교사용 정답은 화면에서만 확인할 수 있습니다.</span><button onclick="window.print()">A4 2쪽 인쇄 / PDF 저장</button>
+</div>
+
+<section class="page">
+  <h1>사라진 멜로디: 타임 하모니</h1>
+  <p class="sub">게임 시작 전 활동지 · 서양음악사 시간 여행 준비하기</p>
+  <div class="name-row">
+    <span>학년·반 <span class="blank"></span></span>
+    <span>번호 <span class="blank" style="min-width:13mm"></span></span>
+    <span>이름 <span class="blank"></span></span>
+  </div>
+  <div class="mission">
+    <strong>🎧 오늘의 미션</strong><br>
+    음악은 시대에 따라 어떻게 달라졌을까요? 다섯 시대의 음악을 미리 살펴보고, 각 시대의 음악을 들을 때 무엇을 주의 깊게 들어야 할지 준비해 봅시다.
+  </div>
+
+  <div class="section">
+    <h2>1. 음악사의 시간 지도</h2>
+    <p>서양음악사는 여러 시대를 거치며 변화해 왔습니다. 아래 시대 이름을 순서대로 읽고, 각 시대에 음악이 어떤 모습이었을지 떠올려 봅시다.</p>
+    <table class="timeline">
+      <tr><th>중세</th><th>바로크</th><th>고전주의</th><th>낭만주의</th><th>현대</th></tr>
+      <tr><td>종교와 성가</td><td>장식과 여러 선율</td><td>균형과 형식</td><td>감정과 상상</td><td>새로운 소리와 실험</td></tr>
+      <tr><td>어떤 음악일까?<div class="small-line"></div></td><td>어떤 음악일까?<div class="small-line"></div></td><td>어떤 음악일까?<div class="small-line"></div></td><td>어떤 음악일까?<div class="small-line"></div></td><td>어떤 음악일까?<div class="small-line"></div></td></tr>
+    </table>
+    <p class="note">※ 아래의 설명을 참고해도 좋습니다. 시대별 특징은 모든 작품에 똑같이 적용되는 규칙이 아니라, 음악을 이해하기 위한 단서입니다.</p>
+  </div>
+
+  <div class="section">
+    <h2>2. 게임에 등장하는 다섯 시대 미리 보기</h2>
+    <div class="era-grid">
+      <div class="era">
+        <div class="tag">01 · 중세 MUSIC</div>
+        <h3>성가와 단선율</h3>
+        <p>종교와 관련된 성가가 중요한 음악이었습니다. 여러 사람이 같은 선율을 함께 부르는 단선율 성가를 떠올려 보세요. 악보에는 네우마라는 기보 방식도 사용되었습니다.</p>
+        <p class="q">들을 때 찾아볼 단서: <span class="answer"></span></p>
+      </div>
+      <div class="era">
+        <div class="tag">02 · 바로크 MUSIC</div>
+        <h3>장식과 대위법</h3>
+        <p>음악에 장식이 많고, 서로 다른 선율이 동시에 어울리는 대위법이 발달했습니다. 바흐는 대위법과 푸가로 잘 알려져 있습니다. 하프시코드와 오르간의 음색도 기억해 두세요.</p>
+        <p class="q">들을 때 찾아볼 단서: <span class="answer"></span></p>
+      </div>
+      <div class="era">
+        <div class="tag">03 · 고전주의 MUSIC</div>
+        <h3>균형과 명료한 형식</h3>
+        <p>선율과 반주의 관계가 비교적 명료하고, 균형 잡힌 구성과 형식을 중요하게 여겼습니다. 하이든·모차르트·베토벤 초기 작품 등이 이 시대를 이해하는 단서입니다.</p>
+        <p class="q">들을 때 찾아볼 단서: <span class="answer"></span></p>
+      </div>
+      <div class="era">
+        <div class="tag">04 · 낭만주의 MUSIC</div>
+        <h3>감정과 상상력</h3>
+        <p>개인의 감정과 상상, 자연이나 민족의 정서를 음악으로 표현하려는 경향이 강해졌습니다. 쇼팽의 피아노 작품을 들으며 음악이 어떤 분위기를 만드는지 생각해 보세요.</p>
+        <p class="q">들을 때 찾아볼 단서: <span class="answer"></span></p>
+      </div>
+      <div class="era">
+        <div class="tag">05 · 현대 MUSIC</div>
+        <h3>새로운 소리와 음악의 경계</h3>
+        <p>작곡가들은 익숙한 음악의 규칙을 새롭게 바라보며 소리와 침묵, 우연과 실험을 작품에 활용하기도 했습니다. 존 케이지의 작품은 ‘무엇이 음악인가?’라는 질문을 던집니다.</p>
+        <p class="q">들을 때 찾아볼 단서: <span class="answer"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer"><span>음악 감상은 정답 찾기만이 아니라, 들리는 것을 관찰하고 해석하는 과정입니다.</span><span>1 / 2</span></div>
+</section>
+
+<section class="page page2">
+  <h1>탐정의 귀를 준비하라!</h1>
+  <p class="sub">게임에서 음악 단서를 발견하기 위한 개인 활동</p>
+
+  <div class="section">
+    <h2>3. 단서와 개념 연결하기</h2>
+    <p>설명을 읽고 알맞은 음악 용어를 연결하세요. 각 용어는 한 번씩 사용합니다.</p>
+    <div class="box" style="margin-bottom:2mm">
+      <b>용어 상자</b><br>
+      단선율 · 대위법 · 형식 · 감정 표현 · 침묵과 소리
+    </div>
+    <p class="q">① 여러 사람이 같은 하나의 선율을 함께 부르는 음악: <span class="answer"></span></p>
+    <p class="q">② 서로 다른 선율들이 동시에 진행하며 어울리는 작곡 기법: <span class="answer"></span></p>
+    <p class="q">③ 음악의 부분들이 일정한 원리와 구조에 따라 구성되는 것: <span class="answer"></span></p>
+    <p class="q">④ 개인의 느낌과 상상, 분위기를 음악으로 나타내는 것: <span class="answer"></span></p>
+    <p class="q">⑤ 소리가 없는 순간이나 주변의 소리까지 작품의 일부로 생각하는 관점: <span class="answer"></span></p>
+  </div>
+
+  <div class="section">
+    <h2>4. 작곡가와 시대 연결하기</h2>
+    <p>게임에서 만나게 될 작곡가를 시대와 연결하세요. 이름 옆에 시대 번호를 적습니다.</p>
+    <table class="timeline">
+      <tr><th style="width:48%">작곡가</th><th>시대 번호 (1~5)</th><th>내가 알고 있는 것 / 떠오르는 이미지</th></tr>
+      <tr><td>힐데가르트 폰 빙엔</td><td style="text-align:center"><span class="answer" style="min-width:10mm"></span></td><td><div class="small-line"></div></td></tr>
+      <tr><td>요한 제바스티안 바흐</td><td style="text-align:center"><span class="answer" style="min-width:10mm"></span></td><td><div class="small-line"></div></td></tr>
+      <tr><td>루트비히 판 베토벤</td><td style="text-align:center"><span class="answer" style="min-width:10mm"></span></td><td><div class="small-line"></div></td></tr>
+      <tr><td>프레데리크 쇼팽</td><td style="text-align:center"><span class="answer" style="min-width:10mm"></span></td><td><div class="small-line"></div></td></tr>
+      <tr><td>존 케이지</td><td style="text-align:center"><span class="answer" style="min-width:10mm"></span></td><td><div class="small-line"></div></td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>5. 게임 플레이 전 나의 감상 전략</h2>
+    <p>게임 중 음악을 들을 때 아래 항목을 활용해 보세요. 각 항목에서 내가 특히 주목할 것을 하나 이상 체크합니다.</p>
+    <div class="box">
+      <div class="checkrow">
+        <span class="check">선율이 하나인지 여러 개인지</span>
+        <span class="check">악기의 음색</span>
+        <span class="check">리듬과 반복</span>
+        <span class="check">음악의 분위기와 감정</span>
+        <span class="check">소리와 침묵</span>
+        <span class="check">시대와 작곡가의 연결</span>
+      </div>
+    </div>
+    <p class="q">내가 가장 자신 있는 감상 단서는 무엇인가요? 그 이유도 적어 보세요.</p>
+    <div class="write-line"></div><div class="write-line"></div>
+    <p class="q">게임에서 새롭게 알아보고 싶은 것은 무엇인가요?</p>
+    <div class="write-line"></div><div class="write-line"></div>
+  </div>
+
+  <div class="section">
+    <h2>6. 출발 전 마지막 예측</h2>
+    <p>다섯 시대 중 가장 낯설거나 궁금한 시대 하나를 고르고, 게임에서 어떤 소리나 음악을 만나게 될지 예상해 보세요.</p>
+    <p>내가 고른 시대: <span class="answer" style="min-width:35mm"></span></p>
+    <div class="write-line"></div><div class="write-line"></div>
+    <p class="note">이제 타임머신을 출발시킬 시간! 활동지를 옆에 두고 게임 속 음악 단서를 찾아보세요.</p>
+  </div>
+
+  <div class="footer"><span>사라진 멜로디: 타임 하모니 · 게임 전 개별 활동지</span><span>2 / 2</span></div>
+</section>
+
+<section class="page teacher">
+  <h1>교사용 정답 및 활용 안내</h1>
+  <p class="sub">이 페이지는 학생 배부용이 아닙니다. 인쇄 시 마지막 페이지를 제외하거나 별도로 보관하세요.</p>
+  <h2>활동지 정답 예시</h2>
+  <table class="key-table">
+    <tr><th style="width:23%">문항</th><th>예시 답안 / 지도 포인트</th></tr>
+    <tr><td>1. 시간 지도</td><td>중세 → 바로크 → 고전주의 → 낭만주의 → 현대. 시대별 특징은 대표적인 경향이며, 모든 작품에 예외 없이 적용되는 것은 아님을 안내합니다.</td></tr>
+    <tr><td>2. 감상 단서</td><td>중세: 같은 선율, 성가의 분위기 / 바로크: 여러 선율의 얽힘, 장식, 건반악기 음색 / 고전주의: 균형, 명료한 선율과 구성 / 낭만주의: 감정, 분위기 변화, 표현력 / 현대: 침묵, 주변 소리, 실험적 발상 등. 다양한 답을 인정합니다.</td></tr>
+    <tr><td>3. 용어 연결</td><td>① 단선율 ② 대위법 ③ 형식 ④ 감정 표현 ⑤ 침묵과 소리</td></tr>
+    <tr><td>4. 작곡가와 시대</td><td>힐데가르트 폰 빙엔–1 중세 / 바흐–2 바로크 / 베토벤–3 고전주의(게임의 시대 배치 기준) / 쇼팽–4 낭만주의 / 존 케이지–5 현대</td></tr>
+    <tr><td>5~6. 감상 전략·예측</td><td>개인 응답. 정답 여부보다 음악을 들을 때 활용할 관찰 기준을 구체적으로 세웠는지 확인합니다.</td></tr>
+  </table>
+
+  <h2 style="margin-top:5mm">수업 운영 제안 (개별 수업, 약 10~15분)</h2>
+  <ol>
+    <li><b>도입 2분:</b> “시대가 달라지면 음악도 달라질까?” 질문으로 관심을 유도합니다.</li>
+    <li><b>읽기 4~5분:</b> 다섯 시대 미리 보기를 읽고, 모르는 용어에 밑줄을 긋게 합니다.</li>
+    <li><b>개별 활동 4~6분:</b> 용어 연결과 작곡가·시대 연결을 풉니다. 필요한 경우 시대 미리 보기를 다시 참고할 수 있습니다.</li>
+    <li><b>플레이 전 1분:</b> 감상 전략을 체크하고 활동지를 게임 옆에 두게 합니다. 게임에서 같은 단서를 발견하면 기억해 두도록 안내합니다.</li>
+  </ol>
+  <p class="note" style="margin-top:4mm">게임 연계: 업로드된 게임은 중세(힐데가르트·네우마), 바로크(바흐·대위법), 고전주의(베토벤·리듬), 낭만주의(쇼팽·감정 감상), 현대(존 케이지·4분 33초)를 중심으로 구성되어 있습니다. 활동지는 이 다섯 축을 게임 전에 익히도록 구성했습니다.</p>
+  <div class="footer"><span>교사용 참고</span><span>별도 페이지</span></div>
+</section>
+</body>
+</html>

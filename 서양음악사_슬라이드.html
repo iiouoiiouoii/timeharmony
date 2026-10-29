@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서양음악사 여행 준비 — 타임 하모니</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@400;600&family=Song+Myung&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=Cormorant+Garamond:ital,wght@1,500;1,700&family=Special+Elite&display=swap">
+<style>
+/* 게임 『사라진 멜로디: 타임 하모니』와 같은 토큰 — 밤의 음악실 + 놋쇠 + 양피지, 시대별 색 */
+:root{
+  --night:#0f1824; --night-2:#152233; --panel:#1b2a3d; --panel-2:#22344b; --line:#33496a;
+  --brass:#d9a648; --brass-hi:#f0c46e; --brass-lo:#8e6a2c;
+  --parch:#f2e8d3; --parch-2:#e6d8bb; --ink:#2b2219; --ink-soft:#6b5a45; --rubric:#9b2d22;
+  --text:#ebe5d8; --muted:#9db0c6; --ok:#6cc79b; --bad:#ee6a5a;
+  --c0:#e8c35c; --c1:#d55b4c; --c2:#5f92e3; --c3:#de86ad; --c4:#86d8d3;
+  --f-display:"Song Myung","Nanum Myeongjo","Batang",serif;
+  --f-story:"Gowun Batang","Nanum Myeongjo","Batang",serif;
+  --f-body:"Gowun Dodum","Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono","Consolas",monospace;
+  --f-goth:"UnifrakturMaguntia",serif; --f-fell:"IM Fell English","Times New Roman",serif;
+  --f-corm:"Cormorant Garamond","Garamond",serif; --f-type:"Special Elite","Courier New",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#070b11;color:var(--text);font-family:var(--f-body);overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--brass-hi);outline-offset:2px}
+
+/* ---------- 덱 (1280×720을 화면에 맞춰 확대·축소) ---------- */
+#deck{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;background:var(--night);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.slide{position:absolute;inset:0;display:none;overflow:hidden;isolation:isolate}
+.slide.on{display:block;animation:fadeIn .45s ease both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(10,14,22,.94) 0%,rgba(10,14,22,.82) 42%,rgba(10,14,22,.25) 75%,rgba(10,14,22,.1))}
+.shade.full{background:rgba(10,14,22,.72)}
+.shade.soft{background:radial-gradient(ellipse at 50% 50%,rgba(10,14,22,.35),rgba(10,14,22,.85))}
+.pad{position:absolute;inset:0;padding:56px 72px 70px}
+.eyebrow{font-family:var(--f-mono);font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--brass);margin:0}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;color:var(--parch);text-wrap:balance}
+h2{font-size:50px;line-height:1.15;margin:10px 0 22px}
+p{margin:0}
+.lead{font-family:var(--f-story);font-size:24px;line-height:1.65;color:var(--text);max-width:30em}
+.muted{color:var(--muted)}
+.foot{position:absolute;left:0;right:0;bottom:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-family:var(--f-mono);font-size:13px;color:var(--muted);background:linear-gradient(transparent,rgba(5,8,12,.75))}
+.foot .strip{display:flex;gap:4px}
+.foot .strip i{width:34px;height:5px;border-radius:3px;background:#2a3a52}
+.foot .strip i.on{background:var(--c)}
+
+/* 양피지 카드 · 특징 목록 */
+.parch{background:linear-gradient(rgba(242,232,211,.97),rgba(233,220,192,.97));color:var(--ink);border-radius:12px;border:1px solid #b89a62;box-shadow:inset 0 0 0 5px rgba(242,232,211,.97),inset 0 0 0 6px var(--ink-e,#8b6a3a),0 18px 50px rgba(0,0,0,.45);padding:26px 30px}
+.feat{display:grid;gap:14px;margin:0;padding:0;list-style:none}
+.feat li{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start;font-family:var(--f-story);font-size:21px;line-height:1.5}
+.feat li b{display:block;font-family:var(--f-display);font-weight:400;font-size:24px;color:var(--ink)}
+.feat .n{width:40px;height:40px;border-radius:50%;background:var(--ink-e,#8b6a3a);color:var(--parch);display:grid;place-items:center;font-family:var(--f-fell);font-size:20px}
+.dark .feat li{color:var(--text)} .dark .feat li b{color:var(--parch)}
+
+/* 인물 컷아웃 */
+.who{position:absolute;bottom:0;height:96%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 20px 40px rgba(0,0,0,.6));-webkit-mask-image:linear-gradient(#000 80%,transparent);mask-image:linear-gradient(#000 80%,transparent)}
+.who.r{right:20px}.who.l{left:20px}
+.float{animation:hover 3.2s ease-in-out infinite}
+@keyframes hover{50%{transform:translateY(-10px)}}
+
+/* 연표(세로) */
+.life{list-style:none;margin:0;padding:0 0 0 22px;border-left:3px solid var(--c,var(--brass));display:grid;gap:12px}
+.life li{position:relative;font-family:var(--f-story);font-size:19px;line-height:1.45}
+.life li::before{content:"";position:absolute;left:-31px;top:7px;width:15px;height:15px;border-radius:50%;background:var(--night);border:3px solid var(--c,var(--brass))}
+.life li.key::before{background:var(--c)}
+.life li.key{color:var(--parch);font-weight:700}
+.life time{display:inline-block;min-width:66px;font-family:var(--f-mono);font-size:16px;color:var(--c,var(--brass-hi))}
+
+/* 사료 쪽지 */
+.doc{background:#efe2c0;color:#2b2016;border-radius:4px;padding:18px 22px 16px;box-shadow:0 14px 40px rgba(0,0,0,.55);border:1px solid #b89a62;transform:rotate(-1deg);position:relative}
+.doc .k{font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;color:#8b2a20}
+.doc h3{color:#2b2016;font-size:22px;margin:4px 0 2px}
+.doc .src{font-family:var(--f-story);font-size:14px;color:#6b5a45;margin-bottom:6px}
+.doc p{font-family:var(--f-story);font-size:17px;line-height:1.65}
+.doc .wax{position:absolute;right:14px;top:-16px;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#c4473a,#7a1f18);display:grid;place-items:center;color:#f2d3c8;font-family:var(--f-display);font-size:12px}
+
+/* 듣기 버튼 */
+.listen{display:inline-flex;align-items:center;gap:10px;background:var(--brass);color:#22180a;border:0;border-radius:999px;padding:10px 20px 10px 14px;font-size:17px;font-weight:700}
+.listen .ic{width:28px;height:28px;border-radius:50%;background:#22180a;color:var(--brass-hi);display:grid;place-items:center;font-size:12px}
+.listen.playing{background:var(--parch)}
+.listen .t{font-family:var(--f-mono);font-size:13px;font-weight:400;opacity:.8}
+.listen.missing{background:var(--panel-2);color:var(--muted)}
+.listens{display:flex;flex-wrap:wrap;gap:10px}
+
+/* 시대 표지(게임 연대 표지와 같은 디자인) */
+.tc-wrap{position:absolute;inset:0;display:grid;place-items:center}
+.tc{width:620px;padding:40px 36px 32px;text-align:center;display:grid;gap:10px;justify-items:center;box-shadow:0 26px 70px rgba(0,0,0,.6)}
+.tc h2{font-size:64px;margin:4px 0 0;color:inherit}
+.tc .theme{font-family:var(--f-story);font-size:24px}
+.tc .meta{font-family:var(--f-story);font-size:18px;opacity:.75}
+.tc .chap{font-family:var(--f-mono);font-size:14px;letter-spacing:.2em;opacity:.7;margin-top:6px}
+.tc-0{background:#efe2c0;color:#2b2016;border:3px solid #8b2a20;outline:6px double #2b4a8b;outline-offset:-16px}
+.tc-0 .illum{width:110px;height:110px;display:grid;place-items:center;background:radial-gradient(circle,#e8c35c,#b8862a);border:4px solid #2b4a8b;font-family:var(--f-goth);font-size:86px;line-height:1;color:#8b2a20;box-shadow:inset 0 0 0 3px #efe2c0}
+.tc-0 .lat{font-family:var(--f-goth);font-size:40px;color:#8b2a20}
+.tc-0 .lat2{font-family:var(--f-goth);font-size:22px;color:#2b4a8b}
+.tc-1{background:#f1e8d4;color:#1d1a16;border:1px solid #1d1a16;outline:4px double #1d1a16;outline-offset:-14px}
+.tc-1 .lat{font-family:var(--f-fell);font-size:56px;letter-spacing:.18em;line-height:1}
+.tc-1 .lat2{font-family:var(--f-fell);font-style:italic;font-size:22px}
+.tc-1 .orn{font-size:24px;letter-spacing:.6em}
+.tc-2{background:repeating-linear-gradient(#f4ecd9 0 35px,#d9cfb8 35px 36px);color:#2c2a4a;border:1px solid #c9b88f;transform:rotate(-1deg)}
+.tc-2 .lat{font-family:var(--f-fell);font-style:italic;font-size:26px;justify-self:end}
+.tc-2 .lat2{font-family:var(--f-fell);font-style:italic;font-size:28px}
+.tc-3{background:radial-gradient(circle at 50% 0,#4a2a46,#22121f);color:#f3dfc0;border:1px solid #c49a50;outline:1px solid #c49a50;outline-offset:-12px}
+.tc-3 .lat{font-family:var(--f-corm);font-style:italic;font-weight:700;font-size:72px;color:#e9c27a;line-height:1}
+.tc-3 .lat2{font-family:var(--f-corm);font-style:italic;font-size:26px;color:#e9c27a}
+.tc-4{background:#f2efe6;color:#151515;border:1px solid #888}
+.tc-4 .lat{font-family:var(--f-type);font-size:28px;letter-spacing:.06em;border-top:2px solid #151515;border-bottom:2px solid #151515;padding:8px 0;width:100%}
+.tc-4 .lat2{font-family:var(--f-type);font-size:17px;line-height:1.7}
+
+/* 시대 지도 */
+.map{position:absolute;left:72px;right:72px;top:250px}
+.map .axis{position:absolute;left:0;right:0;top:118px;height:4px;background:repeating-linear-gradient(90deg,var(--brass-lo) 0 10px,transparent 10px 16px)}
+.map .eras{display:grid;grid-template-columns:1.1fr .8fr 1fr .9fr 1fr 1.1fr;gap:10px;position:relative}
+.map .era{border-radius:12px;padding:16px 16px 18px;background:rgba(27,42,61,.85);border:1px solid var(--line);border-top:5px solid var(--c);min-height:330px;display:grid;align-content:start;gap:8px}
+.map .era.off{opacity:.55;border-top-color:#55606e}
+.map .era b{font-family:var(--f-display);font-weight:400;font-size:32px;color:var(--parch)}
+.map .era .yr{font-family:var(--f-mono);font-size:14px;color:var(--muted)}
+.map .era p{font-family:var(--f-story);font-size:17px;line-height:1.5}
+.map .stop{margin-top:8px;display:flex;gap:8px;align-items:center;font-size:15px;color:var(--c);font-family:var(--f-mono)}
+.map .stop svg{flex:none}
+
+/* 소품 그림 */
+.fig{background:rgba(12,20,31,.88);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+.fig figcaption{font-family:var(--f-story);font-size:18px;color:var(--muted);margin-top:10px;line-height:1.5}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{border:1px solid var(--c3);border-radius:12px;padding:12px 16px;background:rgba(222,134,173,.1);min-width:250px}
+.chip b{display:block;font-family:var(--f-display);font-weight:400;font-size:24px;color:var(--parch)}
+.chip span{font-family:var(--f-story);font-size:17px;color:var(--text)}
+
+/* 정리 표 */
+table.sum{width:100%;border-collapse:collapse;font-size:18px}
+table.sum th{font-family:var(--f-mono);font-size:13px;letter-spacing:.12em;color:var(--brass);text-align:left;padding:8px 12px;border-bottom:2px solid var(--brass-lo)}
+table.sum td{padding:12px;border-bottom:1px solid var(--line);font-family:var(--f-story);vertical-align:top;line-height:1.45}
+table.sum td:first-child{font-family:var(--f-display);font-size:26px;color:var(--c);white-space:nowrap}
+table.sum td.y{font-family:var(--f-mono);font-size:15px;color:var(--muted);white-space:nowrap}
+
+/* 게임 시스템 카드 */
+.sys{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:720px}
+.sys div{background:rgba(27,42,61,.9);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.sys b{display:block;font-family:var(--f-display);font-weight:400;font-size:28px;color:var(--parch);margin-bottom:6px}
+.sys p{font-family:var(--f-story);font-size:18px;line-height:1.55;color:var(--text)}
+.sys .tag{font-family:var(--f-mono);font-size:12px;letter-spacing:.16em;color:var(--brass)}
+
+/* 플레이리스트 */
+.playlist{background:var(--night);border:1px solid var(--line);border-radius:24px;padding:16px 14px;display:grid;gap:8px;width:420px;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.playlist .ph{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:13px;color:var(--muted);padding:0 6px 6px}
+.track{display:flex;gap:14px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--panel);transition:opacity .7s,filter .7s,transform .7s;font-size:18px}
+.track i{width:40px;height:40px;border-radius:8px;flex:none}
+.track small{display:block;color:var(--muted);font-size:14px}
+.track.gone{opacity:.15;filter:blur(1px) grayscale(1);transform:translateX(16px)}
+.track.gone b{text-decoration:line-through}
+.bubble{background:rgba(34,52,75,.95);border:1px solid #2a6f73;border-radius:16px 16px 16px 4px;padding:16px 20px;font-family:var(--f-story);font-size:21px;line-height:1.6;max-width:520px}
+.bubble b{color:var(--c4);font-family:var(--f-display);font-weight:400;margin-right:8px}
+
+/* 30초 듣기 */
+.timer{font-family:var(--f-type);font-size:120px;line-height:1;color:var(--parch);font-variant-numeric:tabular-nums}
+
+/* 컨트롤 · 발표자 메모 */
+#ctl{position:fixed;right:16px;bottom:14px;display:flex;gap:6px;z-index:10;opacity:.25;transition:opacity .2s}
+#ctl:hover,#ctl:focus-within{opacity:1}
+#ctl button{background:rgba(27,42,61,.95);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:14px}
+#ctl span{align-self:center;font-family:var(--f-mono);font-size:13px;color:var(--muted);padding:0 6px}
+#notes{position:fixed;left:16px;bottom:14px;max-width:560px;background:rgba(12,20,31,.96);border:1px solid var(--brass-lo);border-radius:12px;padding:12px 16px;font-family:var(--f-story);font-size:15px;line-height:1.6;z-index:10}
+#notes b{font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;color:var(--brass);display:block;margin-bottom:4px}
+.note{display:none}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="deck">
+
+<!-- 1. 표지 -->
+<section class="slide" data-c="var(--brass)" data-label="표지">
+  <img class="bgimg" src="images/bg_musicroom.png" alt="">
+  <div class="shade"></div>
+  <div class="pad">
+    <p class="eyebrow">게임 전 수업 · 서양음악사 한눈에 보기</p>
+    <h1 style="font-size:84px;line-height:1.05;margin:18px 0 10px">사라진 멜로디</h1>
+    <p style="font-family:var(--f-display);font-size:34px;color:var(--brass);letter-spacing:.06em">타임 하모니 — 시간 여행 준비</p>
+    <p class="lead" style="margin-top:28px">중세에서 현대까지, 900년의 음악 이야기.<br>다섯 시대와 다섯 작곡가를 미리 만나 봐요.</p>
+    <div style="display:flex;gap:6px;margin-top:34px">
+      <i style="width:70px;height:8px;border-radius:4px;background:var(--c0)"></i><i style="width:70px;height:8px;border-radius:4px;background:var(--c1)"></i><i style="width:70px;height:8px;border-radius:4px;background:var(--c2)"></i><i style="width:70px;height:8px;border-radius:4px;background:var(--c3)"></i><i style="width:70px;height:8px;border-radius:4px;background:var(--c4)"></i>
+    </div>
+  </div>
+  <img class="who r float" src="images/ch_harmo_normal.png" alt="하모" style="height:92%;right:40px">
+  <aside class="note">오늘 할 일: 슬라이드로 서양음악사의 흐름을 훑고, 사전 활동지를 채운 뒤 게임을 시작해요. 하모는 게임 속 안내자예요.</aside>
+</section>
+
+<!-- 2. 질문 -->
+<section class="slide" data-c="var(--brass)" data-label="질문">
+  <img class="bgimg" src="images/bg_room.png" alt="">
+  <div class="shade"></div>
+  <div class="pad" style="display:grid;grid-template-columns:1fr 440px;gap:40px;align-items:center">
+    <div>
+      <p class="eyebrow">오늘의 질문</p>
+      <h2 style="font-size:58px">어느 날 아침,<br>세상의 음악이<br>사라진다면?</h2>
+      <div class="bubble"><b>하모</b>음악에도 뿌리가 있어. 성가에서 바흐로, 바흐에서 베토벤으로… 뿌리가 끊기면 지금 우리가 듣는 노래도 없어.</div>
+    </div>
+    <div class="playlist" id="pl">
+      <div class="ph"><span>07:31</span><span>내 플레이리스트</span><span>▮▮▮</span></div>
+      <div class="track"><i style="background:#de86ad"></i><div><b>최애 아이돌 신곡</b><small>K-POP · 3:12</small></div></div>
+      <div class="track"><i style="background:#5f92e3"></i><div><b>보스전 BGM</b><small>게임 OST · 2:48</small></div></div>
+      <div class="track"><i style="background:#86d8d3"></i><div><b>공부할 때 듣는 로파이</b><small>유튜브 음악 · 1:00:00</small></div></div>
+      <div class="track"><i style="background:#e8c35c"></i><div><b>졸업식 합창곡</b><small>학교 음악 · 4:05</small></div></div>
+    </div>
+  </div>
+  <aside class="note">학생들에게 물어보기: "좋아하는 노래가 하루아침에 사라지면?" 플레이리스트가 하나씩 지워지는 장면은 게임 프롤로그와 같아요.</aside>
+</section>
+
+<!-- 3. 지도 -->
+<section class="slide" data-c="var(--brass)" data-label="시대 지도">
+  <div class="pad">
+    <p class="eyebrow">서양음악사 지도</p>
+    <h2>900년을 여섯 시대로 나눠 봐요</h2>
+    <p class="lead" style="font-size:20px;max-width:none">시대 구분과 연도는 대략이에요. ◆ 표시는 게임에서 멈추는 해예요.</p>
+  </div>
+  <div class="map">
+    <div class="eras">
+      <div class="era" style="--c:var(--c0)"><span class="yr">약 500 ~ 1450</span><b>중세</b><p>교회 중심. 한 선율의 성가를 부르고, 악보가 처음 생겼어요.</p><span class="stop">◆ 1150년경</span></div>
+      <div class="era off"><span class="yr">1450 ~ 1600</span><b>르네상스</b><p>여러 성부가 어우러진 합창. 게임에는 나오지 않아요.</p></div>
+      <div class="era" style="--c:var(--c1)"><span class="yr">1600 ~ 1750</span><b>바로크</b><p>화려함과 대비. 오페라·협주곡이 생기고 대위법이 꽃피어요.</p><span class="stop">◆ 1717년</span></div>
+      <div class="era" style="--c:var(--c2)"><span class="yr">1750 ~ 1820</span><b>고전</b><p>균형과 명료함. 소나타 형식과 교향곡이 자리 잡아요.</p><span class="stop">◆ 1802년</span></div>
+      <div class="era" style="--c:var(--c3)"><span class="yr">1820 ~ 1900</span><b>낭만</b><p>개인의 감정과 상상, 민족의 정서를 자유롭게 표현해요.</p><span class="stop">◆ 1847년</span></div>
+      <div class="era" style="--c:var(--c4)"><span class="yr">1900 ~ 지금</span><b>현대</b><p>조성과 형식의 틀을 깨고 ‘무엇이 음악인가’를 다시 물어요.</p><span class="stop">◆ 1952년</span></div>
+    </div>
+  </div>
+  <aside class="note">시대 구분은 학자마다 조금씩 달라요. 바로크의 끝은 흔히 바흐가 세상을 떠난 1750년으로 잡아요.</aside>
+</section>
+
+<!-- ============ 중세 ============ -->
+<section class="slide" data-c="var(--c0)" data-label="중세">
+  <img class="bgimg" src="images/bg_med.png" alt=""><div class="shade soft"></div>
+  <div class="tc-wrap"><div class="tc tc-0"><div class="illum">A</div><p class="lat">Anno Domini MCL</p><p class="lat2">Rupertsberg prope Bingen</p><p class="chap">제1장 · MEDIEVAL</p><h2>중세</h2><p class="theme">단선율과 악보의 탄생</p><p class="meta">약 500년 ~ 1450년</p></div></div>
+</section>
+
+<section class="slide" data-c="var(--c0)" data-label="중세">
+  <img class="bgimg" src="images/bg_med.png" alt=""><div class="shade"></div>
+  <div class="pad" style="display:grid;grid-template-columns:600px 1fr;gap:40px">
+    <div>
+      <p class="eyebrow">중세 · 시대의 특징</p>
+      <h2>노래는 기도였어요</h2>
+      <ul class="feat dark" style="--ink-e:#8b2a20">
+        <li><span class="n">I</span><div><b>교회가 음악의 중심</b>음악은 주로 수도원과 성당에서 예배를 위해 불렀어요.</div></li>
+        <li><span class="n">II</span><div><b>그레고리오 성가</b>교황 그레고리오 1세의 이름이 붙은 라틴어 성가. 반주가 없어요.</div></li>
+        <li><span class="n">III</span><div><b>단선율 (모노포니)</b>여러 사람이 하나의 선율을 함께 불러요.</div></li>
+        <li><span class="n">IV</span><div><b>악보의 탄생</b>입으로만 전하던 노래를 기호로 적기 시작했어요.</div></li>
+      </ul>
+    </div>
+    <figure class="fig" style="margin:150px 0 0;align-self:start">
+      <svg viewBox="0 0 520 200" width="100%" role="img" aria-label="네 줄 보표 위의 네우마">
+        <rect width="520" height="200" rx="8" fill="#efe2c0"/>
+        <g stroke="#a0302a" stroke-width="2"><line x1="20" x2="500" y1="150" y2="150"/><line x1="20" x2="500" y1="122" y2="122"/><line x1="20" x2="500" y1="94" y2="94"/><line x1="20" x2="500" y1="66" y2="66"/></g>
+        <text x="30" y="157" font-family="UnifrakturMaguntia,serif" font-size="30" fill="#2b2219">C</text>
+        <g fill="#2b2219"><rect x="90" y="140" width="20" height="20"/><rect x="150" y="126" width="20" height="20"/><rect x="210" y="98" width="20" height="20"/><rect x="270" y="112" width="20" height="20"/><rect x="330" y="84" width="20" height="20"/><rect x="390" y="70" width="20" height="20"/><rect x="450" y="84" width="20" height="20"/></g>
+        <g font-family="IM Fell English,serif" font-style="italic" font-size="18" fill="#6b5a45" text-anchor="middle"><text x="100" y="40">ut</text><text x="160" y="40">re</text><text x="220" y="40">fa</text><text x="280" y="40">mi</text><text x="340" y="40">sol</text><text x="400" y="40">la</text><text x="460" y="40">sol</text></g>
+      </svg>
+      <figcaption>네모난 기호가 <b style="color:var(--parch)">네우마</b>예요. 1000년대 초 수도사 <b style="color:var(--parch)">귀도 다레초</b>가 가로줄(보표)을 널리 알려, 음높이를 정확히 적을 수 있게 됐어요. 계명 ut·re·mi는 여기서 나왔어요.</figcaption>
+    </figure>
+  </div>
+  <aside class="note">ut는 훗날 do(도)로 바뀌어요. 게임의 첫 미니게임이 바로 네우마를 보표에 적는 퍼즐이에요.</aside>
+</section>
+
+<section class="slide" data-c="var(--c0)" data-label="중세">
+  <img class="bgimg" src="images/bg_med.png" alt=""><div class="shade"></div>
+  <img class="who r" src="images/ch_hildegard_normal.png" alt="힐데가르트 폰 빙엔" style="right:0;height:90%">
+  <div class="pad" style="--c:var(--c0);width:780px">
+    <p class="eyebrow">게임에서 만나는 작곡가 ①</p>
+    <h2 style="margin-bottom:6px">힐데가르트 폰 빙엔</h2>
+    <p class="muted" style="font-family:var(--f-mono);font-size:16px;margin-bottom:22px">Hildegard von Bingen · 1098–1179 · 독일</p>
+    <div style="display:grid;grid-template-columns:330px 1fr;gap:30px;align-items:start">
+      <ul class="life">
+        <li><time>1098</time>독일에서 태어남</li>
+        <li><time>1136</time>수녀원 공동체의 지도자가 됨</li>
+        <li class="key"><time>1150경</time>루페르츠베르크 수녀원을 세움</li>
+        <li><time>1179</time>세상을 떠남</li>
+      </ul>
+      <div style="display:grid;gap:18px">
+        <div class="doc"><span class="wax">史料</span><span class="k">사료</span><h3>거대한 필사본 『리젠코덱스』</h3><p class="src">12세기 말 · 독일 비스바덴 도서관 소장</p><p>힐데가르트의 노래가 줄 위의 네우마로 적혀 있어, 850년 가까이 지난 지금도 다시 부를 수 있어요.</p></div>
+        <div class="listens"><button class="listen" data-a="01_hildegard_chant" data-yt="Hildegard von Bingen chant">중세 성가 듣기</button></div>
+      </div>
+    </div>
+    <p class="lead" style="font-size:19px;margin-top:22px;max-width:none">수녀원장이자 작곡가·저술가. 자신이 본 환시를 노래로 지었어요. <span class="muted">게임 속 위기: 노래가 입에서 입으로만 전해져 사라질 위기!</span></p>
+  </div>
+</section>
+
+<!-- ============ 바로크 ============ -->
+<section class="slide" data-c="var(--c1)" data-label="바로크">
+  <img class="bgimg" src="images/bg_bar.png" alt=""><div class="shade soft"></div>
+  <div class="tc-wrap"><div class="tc tc-1"><p class="orn">❦ ❦ ❦</p><p class="lat">WEIMAR</p><p class="lat2">im November, Anno MDCCXVII</p><p class="chap">제2장 · BAROQUE</p><h2>바로크</h2><p class="theme">질서와 대위법</p><p class="meta">1600년 ~ 1750년</p></div></div>
+</section>
+
+<section class="slide" data-c="var(--c1)" data-label="바로크">
+  <img class="bgimg" src="images/bg_bar.png" alt=""><div class="shade"></div>
+  <div class="pad" style="display:grid;grid-template-columns:600px 1fr;gap:40px">
+    <div>
+      <p class="eyebrow">바로크 · 시대의 특징</p>
+      <h2>화려함과 정교함</h2>
+      <ul class="feat dark" style="--ink-e:#9b2d22">
+        <li><span class="n">I</span><div><b>새 장르의 탄생</b>1600년경 이탈리아에서 오페라가, 이어서 협주곡이 생겼어요.</div></li>
+        <li><span class="n">II</span><div><b>통주저음</b>낮은 선율과 화음이 쉬지 않고 음악을 받쳐 줘요.</div></li>
+        <li><span class="n">III</span><div><b>대위법과 푸가</b>독립된 여러 선율을 동시에 조화롭게 엮어요.</div></li>
+        <li><span class="n">IV</span><div><b>하프시코드와 오르간</b>건반을 누르면 줄을 ‘뜯는’ 하프시코드가 대표 악기예요.</div></li>
+      </ul>
+    </div>
+    <figure class="fig" style="margin:150px 0 0;align-self:start">
+      <svg viewBox="0 0 520 210" width="100%" role="img" aria-label="두 선율이 서로 다르게 움직이는 대위법">
+        <g fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20,60 80,40 140,55 200,30 260,50 320,35 380,60 440,45 500,55" stroke="#d55b4c"/>
+          <polyline points="20,170 80,150 140,165 200,140 260,155 320,175 380,150 440,160 500,145" stroke="#f0c46e"/>
+        </g>
+        <g fill="#d55b4c"><circle cx="80" cy="40" r="7"/><circle cx="200" cy="30" r="7"/><circle cx="320" cy="35" r="7"/><circle cx="440" cy="45" r="7"/></g>
+        <g fill="#f0c46e"><circle cx="80" cy="150" r="7"/><circle cx="200" cy="140" r="7"/><circle cx="320" cy="175" r="7"/><circle cx="440" cy="160" r="7"/></g>
+        <g stroke="#6cc79b" stroke-dasharray="4 5" stroke-width="2"><line x1="80" y1="48" x2="80" y2="142"/><line x1="200" y1="38" x2="200" y2="132"/><line x1="320" y1="43" x2="320" y2="167"/><line x1="440" y1="53" x2="440" y2="152"/></g>
+        <text x="22" y="22" font-size="15" fill="#ebe5d8" font-family="Gowun Dodum">위 선율</text><text x="22" y="200" font-size="15" fill="#ebe5d8" font-family="Gowun Dodum">아래 선율</text>
+      </svg>
+      <figcaption>두 선율이 따로 움직이면서도, 같은 순간에 나는 음(초록 점선)은 서로 잘 어울려요. 이것이 <b style="color:var(--parch)">대위법</b>이에요.</figcaption>
+    </figure>
+  </div>
+  <aside class="note">게임의 바로크 미니게임은 바흐의 위 선율에 어울리는 아래 음을 고르는 대위법 퍼즐이에요. 초록(○)이면 어울림, 빨강(✕)이면 부딪힘.</aside>
+</section>
+
+<section class="slide" data-c="var(--c1)" data-label="바로크">
+  <img class="bgimg" src="images/bg_bar.png" alt=""><div class="shade"></div>
+  <img class="who r" src="images/ch_bach_normal.png" alt="요한 제바스티안 바흐" style="right:0;height:92%">
+  <div class="pad" style="--c:var(--c1);width:800px">
+    <p class="eyebrow">게임에서 만나는 작곡가 ②</p>
+    <h2 style="margin-bottom:6px">요한 제바스티안 바흐</h2>
+    <p class="muted" style="font-family:var(--f-mono);font-size:16px;margin-bottom:22px">Johann Sebastian Bach · 1685–1750 · 독일 · ‘음악의 아버지’</p>
+    <div style="display:grid;grid-template-columns:350px 1fr;gap:30px;align-items:start">
+      <ul class="life">
+        <li><time>1685</time>아이제나흐에서 태어남</li>
+        <li><time>1708</time>바이마르 궁정 오르가니스트</li>
+        <li class="key"><time>1717</time>사직을 고집하다 약 4주간 갇힘</li>
+        <li><time>1717</time>쾨텐의 궁정악장이 됨</li>
+        <li><time>1723</time>라이프치히 토마스 교회 음악감독</li>
+        <li><time>1750</time>세상을 떠남 — 바로크의 끝</li>
+      </ul>
+      <div style="display:grid;gap:18px">
+        <div class="doc"><span class="wax">史料</span><span class="k">사료</span><h3>바이마르 궁정 서기의 기록</h3><p class="src">1717년 · 바이마르 궁정 문서</p><p>“11월 6일, 사직을 지나치게 고집한 탓에 구금실에 갇혔다. 12월 2일, 불명예 해고 통지와 함께 석방되었다.”</p></div>
+        <div class="listens"><button class="listen" data-a="03_bach_toccata_d_minor" data-yt="Bach Toccata and Fugue in D minor">토카타와 푸가 d단조</button><button class="listen" data-a="10_vivaldi_spring" data-yt="Vivaldi Four Seasons Spring">비발디 「봄」</button></div>
+      </div>
+    </div>
+  </div>
+  <aside class="note">당시 음악가는 귀족이나 교회에 고용된 일꾼이라 마음대로 직장을 옮길 수 없었어요. 바흐는 악보 끝에 S.D.G.(오직 하느님께 영광)를 적곤 했어요. 비발디는 같은 시대 이탈리아의 협주곡 작곡가예요.</aside>
+</section>
+
+<!-- ============ 고전 ============ -->
+<section class="slide" data-c="var(--c2)" data-label="고전">
+  <img class="bgimg" src="images/bg_cla.png" alt=""><div class="shade soft"></div>
+  <div class="tc-wrap"><div class="tc tc-2"><p class="lat">Heiligenstadt, den 6ten October 1802</p><p class="lat2">Für meine Brüder Carl und Johann</p><p class="chap">제3장 · CLASSICAL</p><h2>고전</h2><p class="theme">형식과 청각 장애 극복</p><p class="meta">1750년 ~ 1820년</p></div></div>
+</section>
+
+<section class="slide" data-c="var(--c2)" data-label="고전">
+  <img class="bgimg" src="images/bg_cla.png" alt=""><div class="shade"></div>
+  <div class="pad" style="display:grid;grid-template-columns:600px 1fr;gap:40px">
+    <div>
+      <p class="eyebrow">고전 · 시대의 특징</p>
+      <h2>균형 잡힌 건물 같은 음악</h2>
+      <ul class="feat dark" style="--ink-e:#2c4a8b">
+        <li><span class="n">I</span><div><b>균형과 명료함</b>또렷한 선율과 단정한 짜임을 중요하게 여겼어요.</div></li>
+        <li><span class="n">II</span><div><b>소나타 형식</b>곡을 ‘제시부-발전부-재현부’로 짜는 약속이에요.</div></li>
+        <li><span class="n">III</span><div><b>교향곡과 현악 4중주</b>오케스트라 음악이 크게 발전했어요.</div></li>
+        <li><span class="n">IV</span><div><b>빈 고전파</b>하이든·모차르트·베토벤이 오스트리아 빈에서 활동했어요.</div></li>
+      </ul>
+    </div>
+    <figure class="fig" style="margin:150px 0 0;align-self:start">
+      <svg viewBox="0 0 520 150" width="100%" role="img" aria-label="소나타 형식: 제시부, 발전부, 재현부">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#9db0c6"/></marker></defs>
+        <rect x="10" y="40" width="150" height="70" rx="10" fill="rgba(95,146,227,.18)" stroke="#5f92e3" stroke-width="2"/>
+        <rect x="185" y="40" width="150" height="70" rx="10" fill="rgba(240,196,110,.15)" stroke="#f0c46e" stroke-width="2"/>
+        <rect x="360" y="40" width="150" height="70" rx="10" fill="rgba(95,146,227,.18)" stroke="#5f92e3" stroke-width="2"/>
+        <g font-family="Song Myung,serif" font-size="26" fill="#f2e8d3" text-anchor="middle"><text x="85" y="83">제시부</text><text x="260" y="83">발전부</text><text x="435" y="83">재현부</text></g>
+        <g font-family="Gowun Dodum" font-size="15" fill="#9db0c6" text-anchor="middle"><text x="85" y="135">주제를 보여 줌</text><text x="260" y="135">주제를 바꾸고 펼침</text><text x="435" y="135">주제가 돌아옴</text></g>
+        <g stroke="#9db0c6" stroke-width="2"><line x1="160" y1="75" x2="182" y2="75" marker-end="url(#ar)"/><line x1="335" y1="75" x2="357" y2="75" marker-end="url(#ar)"/></g>
+      </svg>
+      <figcaption>또 하나의 변화: 건반을 누르는 힘으로 <b style="color:var(--parch)">여리게(p)·세게(f)</b>를 조절하는 <b style="color:var(--parch)">피아노포르테</b>가 널리 쓰였어요.</figcaption>
+    </figure>
+  </div>
+  <aside class="note">하이든은 ‘교향곡의 아버지’로 불려요. 베토벤은 고전 형식을 지키면서 뜨거운 감정을 담아 낭만주의로 가는 다리를 놓았어요.</aside>
+</section>
+
+<section class="slide" data-c="var(--c2)" data-label="고전">
+  <img class="bgimg" src="images/bg_cla.png" alt=""><div class="shade"></div>
+  <img class="who r" src="images/ch_beethoven_normal.png" alt="루트비히 판 베토벤" style="right:0;height:92%">
+  <div class="pad" style="--c:var(--c2);width:800px">
+    <p class="eyebrow">게임에서 만나는 작곡가 ③</p>
+    <h2 style="margin-bottom:6px">루트비히 판 베토벤</h2>
+    <p class="muted" style="font-family:var(--f-mono);font-size:16px;margin-bottom:22px">Ludwig van Beethoven · 1770–1827 · 독일 출생, 빈 활동</p>
+    <div style="display:grid;grid-template-columns:350px 1fr;gap:30px;align-items:start">
+      <ul class="life">
+        <li><time>1770</time>독일 본에서 태어남</li>
+        <li><time>1792</time>빈으로 옮겨 활동</li>
+        <li class="key"><time>1802</time>청력을 잃어 가며 유서 같은 편지를 씀</li>
+        <li class="key"><time>1808</time>교향곡 5번 「운명」 초연</li>
+        <li><time>1824</time>교향곡 9번 「합창」 초연</li>
+        <li><time>1827</time>세상을 떠남</li>
+      </ul>
+      <div style="display:grid;gap:18px">
+        <div class="doc"><span class="wax">史料</span><span class="k">사료</span><h3>하일리겐슈타트 유서</h3><p class="src">1802년 10월 6일 · 두 동생에게</p><p>“나를 붙잡은 것은 오직 예술뿐이었다.” 이 편지는 부쳐지지 않았고, 그가 세상을 떠난 뒤 발견되었어요.</p></div>
+        <div class="listens"><button class="listen" data-a="04_beethoven_symphony5" data-yt="Beethoven Symphony No. 5">교향곡 5번 「운명」</button><button class="listen" data-a="09_mozart_eine_kleine" data-yt="Mozart Eine kleine Nachtmusik">모차르트 세레나데</button></div>
+      </div>
+    </div>
+  </div>
+  <aside class="note">교향곡 5번 첫머리 ‘빠빠빠빰’은 짧은 세 음과 긴 한 음이에요. 게임에서는 소리를 끄고 진동만 보고 이 리듬을 두드려요.</aside>
+</section>
+
+<!-- ============ 낭만 ============ -->
+<section class="slide" data-c="var(--c3)" data-label="낭만">
+  <img class="bgimg" src="images/bg_rom.png" alt=""><div class="shade soft"></div>
+  <div class="tc-wrap"><div class="tc tc-3"><p class="lat">Paris</p><p class="lat2">— automne 1847 —</p><p class="chap">제4장 · ROMANTIC</p><h2>낭만</h2><p class="theme">감정과 피아노 시인</p><p class="meta">1820년 ~ 1900년</p></div></div>
+</section>
+
+<section class="slide" data-c="var(--c3)" data-label="낭만">
+  <img class="bgimg" src="images/bg_rom.png" alt=""><div class="shade"></div>
+  <div class="pad" style="display:grid;grid-template-columns:600px 1fr;gap:40px">
+    <div>
+      <p class="eyebrow">낭만 · 시대의 특징</p>
+      <h2>마음의 목소리를 따라</h2>
+      <ul class="feat dark" style="--ink-e:#8a3a62">
+        <li><span class="n">I</span><div><b>감정과 상상</b>형식보다 작곡가 개인의 감정과 이야기를 앞세웠어요.</div></li>
+        <li><span class="n">II</span><div><b>민족주의</b>자기 나라의 춤과 민요를 음악에 담았어요.</div></li>
+        <li><span class="n">III</span><div><b>피아노의 시대</b>짧고 서정적인 피아노 소품이 사랑받았어요.</div></li>
+        <li><span class="n">IV</span><div><b>비르투오소</b>리스트처럼 눈부신 기교의 연주자가 스타가 됐어요.</div></li>
+      </ul>
+    </div>
+    <div style="margin-top:150px;display:grid;gap:12px;align-content:start">
+      <p class="muted" style="font-family:var(--f-story);font-size:18px">쇼팽이 사랑한 피아노 곡의 종류</p>
+      <div class="chips">
+        <div class="chip"><b>녹턴</b><span>‘밤의 노래’, 서정적인 곡</span></div>
+        <div class="chip"><b>마주르카 · 폴로네즈</b><span>폴란드의 춤곡</span></div>
+        <div class="chip"><b>에튀드</b><span>‘연습곡’, 기교를 닦는 곡</span></div>
+        <div class="chip"><b>왈츠</b><span>‘쿵-짝-짝’ 3박자 춤곡</span></div>
+      </div>
+    </div>
+  </div>
+  <aside class="note">쇼팽은 작품 거의 전부를 피아노를 위해 써서 ‘피아노의 시인’이라 불려요. 리스트는 쇼팽의 친구이자 교향시를 만든 작곡가예요.</aside>
+</section>
+
+<section class="slide" data-c="var(--c3)" data-label="낭만">
+  <img class="bgimg" src="images/bg_rom.png" alt=""><div class="shade"></div>
+  <img class="who r" src="images/ch_chopin_normal.png" alt="프레데리크 쇼팽" style="right:0;height:92%">
+  <div class="pad" style="--c:var(--c3);width:800px">
+    <p class="eyebrow">게임에서 만나는 작곡가 ④</p>
+    <h2 style="margin-bottom:6px">프레데리크 쇼팽</h2>
+    <p class="muted" style="font-family:var(--f-mono);font-size:16px;margin-bottom:22px">Frédéric Chopin · 1810–1849 · 폴란드 출생, 파리 활동</p>
+    <div style="display:grid;grid-template-columns:350px 1fr;gap:30px;align-items:start">
+      <ul class="life">
+        <li><time>1810</time>폴란드에서 태어남</li>
+        <li><time>1830</time>스무 살에 고국을 떠남</li>
+        <li class="key"><time>1831</time>바르샤바 함락 소식 — 『혁명 에튀드』</li>
+        <li><time>1831</time>파리에 자리 잡음</li>
+        <li class="key"><time>1847</time>『강아지 왈츠』 출판, 병과 외로움</li>
+        <li><time>1849</time>파리에서 세상을 떠남</li>
+      </ul>
+      <div style="display:grid;gap:18px">
+        <div class="doc"><span class="wax">史料</span><span class="k">사료</span><h3>슈투트가르트에서 쓴 일기</h3><p class="src">1831년 9월 · 쇼팽의 일기장</p><p>바르샤바가 러시아군에게 함락되었다는 소식에 가족을 걱정하며 절망과 분노를 쏟아냈어요. 그의 심장은 훗날 바르샤바로 돌아갔어요.</p></div>
+        <div class="listens"><button class="listen" data-a="05_chopin_revolutionary_etude" data-yt="Chopin Revolutionary Etude">혁명 에튀드</button><button class="listen" data-a="06_chopin_minute_waltz" data-yt="Chopin Minute Waltz">강아지 왈츠</button><button class="listen" data-a="07_chopin_nocturne_op9_2" data-yt="Chopin Nocturne Op 9 No 2">녹턴 Op.9-2</button></div>
+      </div>
+    </div>
+  </div>
+  <aside class="note">두 곡을 비교해 들려주세요. 혁명 에튀드는 분노와 격정, 강아지 왈츠는 조르주 상드의 강아지가 꼬리를 쫓는 모습에서 영감을 받았다고 전해져요. 게임의 감정 맞히기 문제와 같아요.</aside>
+</section>
+
+<!-- ============ 현대 ============ -->
+<section class="slide" data-c="var(--c4)" data-label="현대">
+  <img class="bgimg" src="images/bg_mod.png" alt="" style="filter:grayscale(.5) sepia(.2)"><div class="shade soft"></div>
+  <div class="tc-wrap"><div class="tc tc-4"><p class="lat">MAVERICK CONCERT HALL</p><p class="lat2">WOODSTOCK, N.Y. · FRIDAY, AUGUST 29, 1952<br>DAVID TUDOR, PIANO</p><p class="chap">제5장 · MODERN</p><h2>현대</h2><p class="theme">고정관념을 깨는 새로운 시도</p><p class="meta">1900년 ~ 지금</p></div></div>
+</section>
+
+<section class="slide" data-c="var(--c4)" data-label="현대">
+  <img class="bgimg" src="images/bg_mod.png" alt="" style="filter:grayscale(.5) sepia(.2)"><div class="shade"></div>
+  <div class="pad" style="display:grid;grid-template-columns:600px 1fr;gap:40px">
+    <div>
+      <p class="eyebrow">현대 · 시대의 특징</p>
+      <h2>이것도 음악일까?</h2>
+      <ul class="feat dark" style="--ink-e:#2a6f73">
+        <li><span class="n">I</span><div><b>조성에서 벗어나기</b>‘도’ 같은 중심음이 없는 음악이 나타났어요.</div></li>
+        <li><span class="n">II</span><div><b>12음 기법</b>1920년대 쇤베르크가 12개 음을 평등하게 쓰는 방법을 만들었어요.</div></li>
+        <li><span class="n">III</span><div><b>새로운 소리</b>피아노 줄 사이에 나사·고무를 끼운 프리페어드 피아노, 전자음악.</div></li>
+        <li><span class="n">IV</span><div><b>우연과 침묵</b>존 케이지는 우연과 주변 소리까지 음악으로 끌어들였어요.</div></li>
+      </ul>
+    </div>
+    <figure class="fig" style="margin:150px 0 0;align-self:start;text-align:center">
+      <svg viewBox="0 0 300 300" width="300" role="img" aria-label="한 옥타브의 12개 음을 모두 한 번씩 쓰는 음렬">
+        <circle cx="150" cy="150" r="118" fill="none" stroke="#33496a" stroke-width="2"/>
+        <polyline fill="none" stroke="#86d8d3" stroke-width="2.5" stroke-linejoin="round" points="252.2,209 209,252.2 91,252.2 209,47.8 150,268 268,150 47.8,209 252.2,91 91,47.8 150,32 32,150 47.8,91"/>
+        <g font-family="IBM Plex Mono" font-size="14" fill="#ebe5d8" text-anchor="middle">
+          <text x="150" y="20">C</text><text x="215" y="38">C♯</text><text x="264" y="85">D</text><text x="284" y="155">E♭</text><text x="264" y="225">E</text><text x="215" y="272">F</text><text x="150" y="292">F♯</text><text x="85" y="272">G</text><text x="36" y="225">A♭</text><text x="16" y="155">A</text><text x="36" y="85">B♭</text><text x="85" y="38">B</text>
+        </g>
+        <g fill="#86d8d3"><circle cx="252.2" cy="209" r="7"/><circle cx="47.8" cy="91" r="5"/></g>
+      </svg>
+      <figcaption style="text-align:left">12음 기법: 한 옥타브의 12개 음을 모두 한 번씩 쓴 ‘음렬’로 곡을 만들어, 어느 한 음도 중심이 되지 않게 해요.</figcaption>
+    </figure>
+  </div>
+  <aside class="note">그림의 선은 쇤베르크 피아노 모음곡 Op.25의 음렬(E–F–G–D♭–G♭–E♭–A♭–D–B–C–A–B♭)을 따라 그린 거예요. 큰 점이 시작음 E. 케이지는 젊은 시절 쇤베르크에게 배웠어요.</aside>
+</section>
+
+<section class="slide" data-c="var(--c4)" data-label="현대">
+  <img class="bgimg" src="images/bg_mod.png" alt="" style="filter:grayscale(.5) sepia(.2)"><div class="shade"></div>
+  <img class="who r" src="images/ch_cage_normal.png" alt="존 케이지" style="right:0;height:92%">
+  <div class="pad" style="--c:var(--c4);width:800px">
+    <p class="eyebrow">게임에서 만나는 작곡가 ⑤</p>
+    <h2 style="margin-bottom:6px">존 케이지</h2>
+    <p class="muted" style="font-family:var(--f-mono);font-size:16px;margin-bottom:22px">John Cage · 1912–1992 · 미국</p>
+    <div style="display:grid;grid-template-columns:350px 1fr;gap:30px;align-items:start">
+      <ul class="life">
+        <li><time>1912</time>로스앤젤레스에서 태어남</li>
+        <li><time>1930s</time>쇤베르크에게 작곡을 배움</li>
+        <li><time>1940</time>프리페어드 피아노를 만듦</li>
+        <li><time>1951</time>하버드대 무향실에서 ‘침묵은 없다’를 깨달음</li>
+        <li class="key"><time>1952</time>『4′33″』 초연</li>
+        <li><time>1992</time>세상을 떠남</li>
+      </ul>
+      <div style="display:grid;gap:18px">
+        <div class="doc"><span class="wax">史料</span><span class="k">사료</span><h3>1952년 8월 29일 연주회</h3><p class="src">우드스톡 매버릭 콘서트홀 · 피아노 데이비드 튜더</p><p>피아니스트는 4분 33초 동안 한 음도 치지 않았어요. 1악장엔 바람, 2악장엔 빗소리, 3악장엔 관객의 웅성거림이 들렸다고 해요.</p></div>
+        <div class="listens"><button class="listen" data-goto="next">30초 동안 교실의 소리 듣기 →</button></div>
+      </div>
+    </div>
+  </div>
+  <aside class="note">무향실은 소리가 전혀 반사되지 않는 방이에요. 케이지는 그 안에서도 자기 몸의 소리(신경계와 피가 흐르는 소리)를 들었다고 해요.</aside>
+</section>
+
+<section class="slide" data-c="var(--c4)" data-label="현대">
+  <div class="pad" style="display:grid;place-content:center;text-align:center;gap:20px">
+    <p class="eyebrow">직접 해 보기 · 4′33″ 맛보기</p>
+    <h2 style="margin:0">30초 동안, 아무 소리도 내지 말고 들어 보세요</h2>
+    <div class="timer" id="tm">0:30</div>
+    <p class="lead" style="margin:0 auto;font-size:22px" id="tcue">시작을 누르면 시간이 흘러요. 어떤 소리가 들리나요?</p>
+    <div><button class="listen" id="tstart"><span class="ic">▶</span>시작</button></div>
+  </div>
+  <aside class="note">끝나면 들린 소리를 발표해 보세요(에어컨, 바깥 차 소리, 숨소리…). 게임의 현대 미니게임은 이 활동을 33초 또는 4분 33초로 해요.</aside>
+</section>
+
+<!-- 정리 -->
+<section class="slide" data-c="var(--brass)" data-label="정리">
+  <div class="pad">
+    <p class="eyebrow">한눈에 정리</p>
+    <h2 style="margin-bottom:18px">다섯 시대, 다섯 작곡가</h2>
+    <table class="sum">
+      <thead><tr><th>시대</th><th>대략의 연도</th><th>핵심 키워드</th><th>게임 속 작곡가 · 사건</th><th>대표곡</th></tr></thead>
+      <tbody>
+        <tr><td style="--c:var(--c0)">중세</td><td class="y">~1450</td><td>그레고리오 성가, 단선율, 네우마</td><td>힐데가르트 — 노래를 악보로 남기기 (1150경)</td><td>성가 모음 『심포니아』</td></tr>
+        <tr><td style="--c:var(--c1)">바로크</td><td class="y">1600~1750</td><td>대위법, 푸가, 하프시코드</td><td>바흐 — 바이마르에서 갇힘 (1717)</td><td>『토카타와 푸가 d단조』</td></tr>
+        <tr><td style="--c:var(--c2)">고전</td><td class="y">1750~1820</td><td>소나타 형식, 교향곡, 피아노포르테</td><td>베토벤 — 청력을 잃어 가다 (1802)</td><td>교향곡 5번 「운명」</td></tr>
+        <tr><td style="--c:var(--c3)">낭만</td><td class="y">1820~1900</td><td>감정, 민족주의, 피아노 소품</td><td>쇼팽 — 고향을 그리워하며 (1847)</td><td>『혁명 에튀드』, 『강아지 왈츠』</td></tr>
+        <tr><td style="--c:var(--c4)">현대</td><td class="y">1900~</td><td>12음 기법, 우연성, 침묵</td><td>케이지 — 소리 없는 곡의 초연 (1952)</td><td>『4′33″』</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 게임 미리보기 -->
+<section class="slide" data-c="var(--brass)" data-label="게임 안내">
+  <img class="bgimg" src="images/bg_musicroom.png" alt=""><div class="shade"></div>
+  <img class="who r float" src="images/ch_harmo_smile.png" alt="하모" style="height:90%;right:30px">
+  <div class="pad">
+    <p class="eyebrow">게임 미리 보기</p>
+    <h2>시간 여행의 규칙</h2>
+    <div class="sys">
+      <div><span class="tag">EMPATHY</span><b>공감도</b><p>그 시대와 작곡가의 성격에 맞는 말을 고르세요. 60을 넘기면 크리스탈을 얻어요.</p></div>
+      <div><span class="tag">LISTEN</span><b>음악 단서</b><p>짧은 음악을 듣고 악기·감정·특징을 맞혀요. 오늘 배운 내용이 그대로 나와요.</p></div>
+      <div><span class="tag">GLITCH</span><b>타임라인 균열</b><p>그 시대에 없던 물건을 권하면 역사가 뒤틀리고 에너지가 줄어요.</p></div>
+      <div><span class="tag">COLLECT</span><b>도감과 수료증</b><p>작곡가 카드와 사료를 모으고, 마지막에 수료증을 받아요.</p></div>
+    </div>
+  </div>
+  <aside class="note">퀴즈는 첫 번째 답만 기록돼요. 끝나면 수료증 화면의 ‘결과를 글로 복사’로 제출하게 해 주세요.</aside>
+</section>
+
+<!-- 출발 -->
+<section class="slide" data-c="var(--brass)" data-label="출발">
+  <img class="bgimg" src="images/bg_classroom.png" alt=""><div class="shade"></div>
+  <img class="who r" src="images/ch_yun_normal.png" alt="윤서" style="height:90%;right:40px">
+  <div class="pad">
+    <p class="eyebrow">출발 전 체크</p>
+    <h2 style="font-size:60px">준비됐나요?</h2>
+    <ul class="feat dark" style="--ink-e:var(--brass-lo);max-width:620px">
+      <li><span class="n">1</span><div><b>사전 활동지 채우기</b>시대 연표, 작곡가 연결, 용어를 먼저 정리해요.</div></li>
+      <li><span class="n">2</span><div><b>이어폰 · 헤드폰 준비</b>음악 단서와 4′33″ 미션은 귀로 풀어요.</div></li>
+      <li><span class="n">3</span><div><b>게임 시작</b>이름을 쓰고 ‘새로 시작’. 카세트를 재생하면 출발!</div></li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<nav id="ctl" aria-label="슬라이드 이동">
+  <button id="prev" aria-label="이전">←</button><span id="cnt">1 / 1</span><button id="next" aria-label="다음">→</button>
+  <button id="nt" aria-pressed="false" title="발표자 메모 (N)">메모</button><button id="fs" title="전체 화면 (F)">전체 화면</button>
+</nav>
+<div id="notes" hidden><b>발표자 메모</b><span id="ntx"></span></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const deck=$('#deck'), slides=$$('.slide');
+let cur=0;
+
+/* 화면 크기에 맞춰 확대·축소 */
+function fit(){const s=Math.min(innerWidth/1280,innerHeight/720);deck.style.transform=`translate(-50%,-50%) scale(${s})`;deck.style.transformOrigin='center';}
+deck.style.transform='translate(-50%,-50%)';
+addEventListener('resize',fit);
+
+/* 아래 띠: 시대 색 */
+const ERAS=['중세','바로크','고전','낭만','현대'], EC=['var(--c0)','var(--c1)','var(--c2)','var(--c3)','var(--c4)'];
+slides.forEach((s,i)=>{const f=document.createElement('div');f.className='foot';const lab=s.dataset.label;
+  f.innerHTML=`<span>타임 하모니 · ${lab}</span><span class="strip">${ERAS.map((e,k)=>`<i style="--c:${EC[k]}" class="${e===lab?'on':''}"></i>`).join('')}</span><span>${i+1} / ${slides.length}</span>`;s.appendChild(f)});
+
+/* 그림 파일이 없으면 조용히 숨김 */
+$$('img').forEach(im=>im.addEventListener('error',()=>{im.remove()}));
+
+function go(n){
+  cur=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,i)=>s.classList.toggle('on',i===cur));
+  $('#cnt').textContent=`${cur+1} / ${slides.length}`;
+  try{history.replaceState(null,'','#'+(cur+1))}catch(e){}
+  const note=slides[cur].querySelector('.note'); $('#ntx').textContent=note?note.textContent:'이 슬라이드에는 메모가 없어요.';
+  if(slides[cur].querySelector('#pl')) runPlaylist();
+}
+function runPlaylist(){const t=$$('#pl .track');t.forEach(x=>x.classList.remove('gone'));t.forEach((x,i)=>setTimeout(()=>x.classList.add('gone'),900+i*800))}
+$('#prev').onclick=()=>go(cur-1); $('#next').onclick=()=>go(cur+1);
+$('#nt').onclick=e=>{const on=$('#notes').hidden;$('#notes').hidden=!on;e.currentTarget.setAttribute('aria-pressed',String(on))};
+$('#fs').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
+addEventListener('keydown',e=>{
+  if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(cur+1)}
+  else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(cur-1)}
+  else if(e.key==='Home')go(0); else if(e.key==='End')go(slides.length-1);
+  else if(e.key==='f'||e.key==='F')$('#fs').click(); else if(e.key==='n'||e.key==='N')$('#nt').click();
+});
+
+/* 음악 듣기: audio 폴더의 녹음, 없으면 유튜브 검색으로 */
+let playing=null;
+function stopAll(){if(playing){playing.a.pause();playing.b.classList.remove('playing');playing.b.querySelector('.ic').textContent='▶';clearInterval(playing.iv);playing.b.querySelector('.t').textContent='';playing=null}}
+$$('.listen[data-a]').forEach(b=>{
+  b.innerHTML=`<span class="ic">▶</span>${b.textContent}<span class="t"></span>`;
+  const probe=new Audio(); probe.preload='metadata';
+  probe.onerror=()=>{b.classList.add('missing');b.querySelector('.ic').textContent='↗';b.title='음원 파일이 없어 유튜브에서 찾아요'};
+  probe.src='audio/'+b.dataset.a+'.mp3';
+  b.onclick=()=>{
+    if(b.classList.contains('missing')){window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(b.dataset.yt),'_blank');return}
+    if(playing&&playing.b===b){stopAll();return}
+    stopAll(); const a=new Audio('audio/'+b.dataset.a+'.mp3'); a.play().catch(()=>{});
+    b.classList.add('playing'); b.querySelector('.ic').textContent='■';
+    const t0=Date.now(); const iv=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);b.querySelector('.t').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`},500);
+    a.onended=stopAll; playing={a,b,iv};
+  };
+});
+$$('.listen[data-goto]').forEach(b=>{b.innerHTML=`<span class="ic">♪</span>${b.textContent}`;b.onclick=()=>go(cur+1)});
+
+/* 30초 듣기 타이머 */
+let tIv=null;
+$('#tstart').onclick=()=>{stopAll();clearInterval(tIv);let left=30;const tm=$('#tm'),cue=$('#tcue');tm.textContent='0:30';cue.textContent='쉿… 지금 들리는 모든 소리가 음악이에요.';
+  tIv=setInterval(()=>{left--;tm.textContent=`0:${String(left).padStart(2,'0')}`;if(left<=0){clearInterval(tIv);cue.textContent='끝! 어떤 소리가 들렸나요? 짝과 이야기해 보세요.'}},1000)};
+
+fit(); go((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body>
+</html>

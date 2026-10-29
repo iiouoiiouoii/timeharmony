@@ -1,0 +1,1886 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>사라진 멜로디: 타임 하모니</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@400;600&family=Song+Myung&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=Cormorant+Garamond:ital,wght@1,500;1,700&family=Special+Elite&display=swap">
+<style>
+/* Layout: one-screen cassette deck — HUD on top, visual-novel stage in the middle, tape player bar at the bottom.
+   Single dark theme (night music room); each era paints its own period scene, title card and paper. */
+:root{
+  --night:#0f1824; --night-2:#152233; --panel:#1b2a3d; --panel-2:#22344b; --line:#33496a;
+  --brass:#d9a648; --brass-hi:#f0c46e; --brass-lo:#8e6a2c;
+  --parch:#f2e8d3; --parch-2:#e6d8bb; --ink:#2b2219; --ink-soft:#6b5a45; --rubric:#9b2d22;
+  --text:#ebe5d8; --muted:#9db0c6;
+  --ok:#6cc79b; --bad:#ee6a5a;
+  --c0:#e8c35c; --c1:#d55b4c; --c2:#5f92e3; --c3:#de86ad; --c4:#86d8d3;
+  --f-display:"Song Myung","Nanum Myeongjo","Batang",serif;
+  --f-story:"Gowun Batang","Nanum Myeongjo","Batang",serif;
+  --f-body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Consolas",monospace;
+  --f-goth:"UnifrakturMaguntia","Old English Text MT",serif;
+  --f-fell:"IM Fell English","Times New Roman",serif;
+  --f-corm:"Cormorant Garamond","Garamond",serif;
+  --f-type:"Special Elite","Courier New",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--night);color:var(--text);font-family:var(--f-body);font-size:16px;line-height:1.6;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--brass-hi);outline-offset:2px}
+#app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-width:1180px;margin:0 auto;gap:10px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- HUD ---------- */
+#hud{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
+.brand{background:none;border:0;padding:0;text-align:left;font-family:var(--f-display);font-size:20px;line-height:1.1;color:var(--parch)}
+.brand span{display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.22em;color:var(--brass);text-transform:uppercase}
+.hud-mid{display:flex;align-items:center;gap:16px}
+.energy{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.energy svg{width:40px;height:40px;transform:rotate(-90deg)}
+.energy b{display:block;color:var(--parch);font-size:14px}
+.slots{display:flex;gap:4px}
+.slot{width:30px;height:30px;display:grid;place-items:center;border-radius:6px;background:var(--night-2);border:1px solid var(--line)}
+.slot.on{border-color:transparent;background:var(--panel)}
+.slot.on svg{filter:drop-shadow(0 0 6px var(--glow))}
+.hud-right{display:flex;gap:6px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--text)}
+.chip:hover{border-color:var(--brass)}
+.chip[aria-pressed="false"]{color:var(--muted)}
+
+/* ---------- Stage ---------- */
+#stage{position:relative;overflow:auto;border-radius:16px;border:1px solid var(--line);background:var(--night-2);padding:22px;scrollbar-width:thin}
+#stage.vn-mode{padding:0;overflow:hidden}
+#stage[data-era="title"],#stage[data-era="map"]{background:radial-gradient(ellipse at 50% -10%,rgba(217,166,72,.16),transparent 55%),radial-gradient(circle at 15% 85%,rgba(95,146,227,.12),transparent 45%),var(--night-2)}
+#stage[data-era="0"]{background:radial-gradient(circle at 82% 18%,rgba(232,195,92,.2),transparent 34%),linear-gradient(#2a2620,#14120f)}
+#stage[data-era="1"]{background:radial-gradient(circle at 70% 10%,rgba(160,180,220,.18),transparent 45%),linear-gradient(#26282e,#121317)}
+#stage[data-era="2"]{background:radial-gradient(circle at 20% 15%,rgba(240,160,80,.22),transparent 45%),linear-gradient(160deg,#3a2c22,#1b1a1e 70%)}
+#stage[data-era="3"]{background:radial-gradient(circle at 80% 80%,rgba(222,134,173,.18),transparent 45%),linear-gradient(#2a1d30,#140f18)}
+#stage[data-era="4"]{background:radial-gradient(ellipse at 50% 0%,rgba(220,220,200,.14),transparent 50%),linear-gradient(#2a2620,#141310)}
+#stage.shake{animation:shake .12s linear infinite}
+@keyframes shake{0%{transform:translate(0,0)}25%{transform:translate(3px,-2px)}50%{transform:translate(-3px,1px)}75%{transform:translate(1px,3px)}}
+
+h1,h2,h3{font-family:var(--f-display);font-weight:400;text-wrap:balance;margin:0;color:var(--parch)}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin:0}
+.lead{color:var(--muted);max-width:60ch}
+.btn{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 18px;color:var(--text);font-size:15px}
+.btn:hover{border-color:var(--brass)}
+.btn.primary{background:var(--brass);border-color:var(--brass);color:#22180a;font-weight:700}
+.btn.primary:hover{background:var(--brass-hi)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted)}
+
+/* ---------- Title ---------- */
+.title-screen{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:center;min-height:100%}
+.title-screen h1{font-size:clamp(40px,7vw,72px);line-height:1.05;margin:8px 0}
+.title-screen h1 small{display:block;font-size:.42em;color:var(--brass);margin-top:6px;letter-spacing:.08em}
+.start-form{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 12px;align-items:center;margin:18px 0 12px;max-width:420px}
+.start-form input{background:var(--night);border:1px solid var(--line);border-radius:8px;padding:9px 12px;min-width:0}
+.start-form .btn{grid-column:1/-1;justify-self:start}
+.title-links{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap}
+.title-links button{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.title-links button:hover{color:var(--brass-hi)}
+.cassette{width:100%;max-width:420px;aspect-ratio:1.6;justify-self:center;background:linear-gradient(#2a3a52,#1d2a3c);border-radius:18px;border:2px solid #3e5577;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.cassette .label{position:absolute;left:7%;right:7%;top:9%;height:52%;background:var(--parch);border-radius:8px;padding:8px 14px;color:var(--ink)}
+.cassette .label b{font-family:var(--f-display);font-weight:400;font-size:clamp(15px,2.4vw,22px);display:block}
+.cassette .label span{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--ink-soft)}
+.cassette .label .stripe{position:absolute;left:0;right:0;bottom:12px;height:8px;background:linear-gradient(90deg,var(--c0),var(--c1),var(--c2),var(--c3),var(--c4))}
+.cassette .win{position:absolute;left:24%;right:24%;top:30%;height:22%;background:#101826;border-radius:30px;display:flex;justify-content:space-between;align-items:center;padding:0 6%}
+.reel{width:28%;aspect-ratio:1;border-radius:50%;background:repeating-conic-gradient(var(--parch-2) 0 20deg,#101826 20deg 60deg);border:3px solid var(--parch-2);animation:spin 3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cassette .foot{position:absolute;left:22%;right:22%;bottom:0;height:20%;background:#18243a;clip-path:polygon(8% 0,92% 0,100% 100%,0 100%)}
+
+/* ---------- Visual novel ---------- */
+.vn{position:relative;height:100%;min-height:440px;overflow:hidden;isolation:isolate}
+.vn-bg{position:absolute;inset:0;z-index:0;transition:opacity .5s}
+.vn-bg svg{width:100%;height:100%;display:block}
+.vn-bg.fading{opacity:0}
+.vn[data-era="0"] .vn-bg{filter:sepia(.25) contrast(1.05)}
+.vn[data-era="1"] .vn-bg{filter:sepia(.3) saturate(.85)}
+.vn[data-era="2"] .vn-bg{filter:sepia(.35)}
+.vn[data-era="3"] .vn-bg{filter:sepia(.15)}
+.vn[data-era="4"] .vn-bg{filter:grayscale(.75) sepia(.25) contrast(1.08)}
+.vn-grain{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 50%,rgba(10,6,2,.55) 100%)}
+.vn.period .vn-grain::after{content:"";position:absolute;inset:0;opacity:.18;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .12 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vn[data-era="4"] .vn-grain::after{animation:flick .25s steps(2) infinite}
+@keyframes flick{50%{opacity:.26;transform:translate(3px,-2px)}}
+.vn-chars{position:absolute;inset:0;z-index:2;pointer-events:none}
+.char{position:absolute;bottom:0;left:50%;transform:translateX(-50%);height:min(92%,640px);aspect-ratio:300/560;transition:left .5s ease,filter .3s,opacity .4s;animation:charIn .5s ease both}
+.char svg{width:100%;height:100%;display:block}
+.char.comp{aspect-ratio:200/240;height:56%;bottom:auto;top:9%}
+.char.comp svg{-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent);filter:drop-shadow(0 10px 30px rgba(0,0,0,.5))}
+.char.p-left{left:27%}.char.p-right{left:73%}
+.char img{width:100%;height:100%;object-fit:contain;object-position:bottom;display:block;filter:drop-shadow(0 10px 30px rgba(0,0,0,.45))}
+.char.img,.char.comp.img{aspect-ratio:2/3;height:min(94%,720px);top:auto;bottom:0}
+.char.harmo img{animation:hover 3.2s ease-in-out infinite}
+.vn-bg img.bgimg{width:100%;height:100%;object-fit:cover;display:block}
+.vn .vn-bg.photo{filter:none}
+.vn-bg.fadeportraits img.bgimg{animation:dimbg 2.4s ease forwards}
+@keyframes dimbg{to{filter:brightness(.6) saturate(.6) blur(1px)}}
+.glitch .frame{position:relative;aspect-ratio:200/240}
+.glitch .frame img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;display:block}
+.itemov{position:absolute;inset:0;width:100%;height:100%}
+.guide .mini img{width:100%;display:block;animation:hover 3.2s ease-in-out infinite}
+.char.dim{filter:brightness(.6) saturate(.8)}
+.char.harmo svg{animation:hover 3.2s ease-in-out infinite}
+.char.out{opacity:0}
+@keyframes charIn{from{opacity:0;transform:translate(-50%,24px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes hover{50%{transform:translateY(-8px)}}
+.vn-fx{position:absolute;inset:0;z-index:5;pointer-events:none}
+.vn-fx.flash{animation:flash .9s ease-out}
+@keyframes flash{0%{background:rgba(255,255,255,0)}15%{background:rgba(220,255,250,.95)}100%{background:rgba(255,255,255,0)}}
+.vn-bg.fadeportraits .portraits{animation:ghost 2.4s ease forwards}
+@keyframes ghost{to{opacity:.12;filter:blur(3px)}}
+.vn-bg .glowbox{animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{50%{opacity:.35}}
+.vn-top{position:absolute;z-index:3;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;pointer-events:none}
+.vn-top>*{pointer-events:auto}
+.stamp{font-family:var(--f-story);font-size:13px;color:var(--parch);background:rgba(20,14,8,.62);border:1px solid rgba(242,232,211,.3);border-radius:6px;padding:4px 10px;max-width:60%}
+.stamp i{font-style:normal;color:var(--brass-hi);font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;display:block}
+.vu{background:rgba(12,20,31,.85);border:1px solid var(--line);border-radius:10px;padding:8px 12px;width:220px;max-width:46%}
+.vu-head{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.vu-head b{font-family:var(--f-mono);color:var(--brass-hi);font-variant-numeric:tabular-nums}
+.vu-track{position:relative;height:12px;border-radius:3px;background:repeating-linear-gradient(90deg,#1e2b3d 0 6px,#0c141f 6px 8px);margin:5px 0 2px}
+.vu-fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:3px;background:linear-gradient(90deg,#4f8a6d,var(--ok) 55%,var(--brass-hi) 80%,var(--bad));transition:width .6s cubic-bezier(.3,1.4,.5,1);-webkit-mask:repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 8px);mask:repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 8px)}
+.vu-mark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--parch)}
+.vu small{font-size:11px;color:var(--muted)}
+.vu .delta{font-family:var(--f-mono);font-size:12px;margin-left:6px}
+.vn-cg{position:absolute;z-index:3;left:50%;top:6%;transform:translateX(-50%);width:min(380px,88%);animation:charIn .4s ease both}
+.vn-cg .track{padding:6px 10px}.vn-cg .track i{width:28px;height:28px}
+.vn-ui{position:absolute;z-index:4;left:0;right:0;bottom:0;padding:0 14px 14px;display:grid;gap:6px;max-height:calc(100% - 70px)}
+.vn-menu{display:flex;gap:6px;justify-content:flex-end;margin-bottom:12px}
+.vn-menu button{background:rgba(12,20,31,.75);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:12px;color:var(--muted)}
+.vn-menu button[aria-pressed="true"]{color:var(--brass-hi);border-color:var(--brass)}
+.vn-box{position:relative;border-radius:14px;padding:14px 22px 16px;display:grid;gap:12px;align-content:start;min-height:170px;overflow:auto;cursor:pointer;
+  background:rgba(13,21,33,.9);border:1px solid rgba(217,166,72,.55);box-shadow:0 10px 40px rgba(0,0,0,.45);color:var(--text)}
+.vn.period .vn-box{background:linear-gradient(rgba(242,232,211,.97),rgba(233,220,192,.97));color:var(--ink);border:1px solid #b89a62;box-shadow:inset 0 0 0 5px rgba(242,232,211,.97),inset 0 0 0 6px var(--era-ink,#8b6a3a),0 12px 40px rgba(0,0,0,.5)}
+.vn.period .vn-box::before,.vn.period .vn-box::after{content:"❦";position:absolute;bottom:6px;font-size:16px;color:var(--era-ink,#8b6a3a);opacity:.7}
+.vn.period .vn-box::before{left:12px;transform:scaleX(-1)}
+.vn.period .vn-box::after{right:12px}
+.nameplate{position:static;justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis;margin-bottom:-4px;border-radius:6px;padding:2px 14px;font-family:var(--f-display);font-size:16px;background:var(--brass);color:#22180a;display:flex;gap:8px;align-items:baseline;white-space:nowrap}
+.nameplate small{font-size:13px;opacity:.75}
+.nameplate.me{background:var(--c2);color:#fff}
+.nameplate.yun{background:#c9576e;color:#fff}
+.nameplate.harmo{background:#2a6f73;color:#e9fffd}
+.nameplate.clue{background:#1b2a3d;color:var(--brass-hi);border:1px solid var(--brass)}
+.vn.period .nameplate{background:var(--era-ink,#8b6a3a);color:var(--parch)}
+.vn.period .nameplate small{font-family:var(--era-font,var(--f-fell));font-size:15px;opacity:.85}
+.vn.period .nameplate.me{background:var(--c2);color:#fff}
+.vn.period .nameplate.clue{background:#1b2a3d;color:var(--brass-hi)}
+.line{margin:0;font-family:var(--f-story);font-size:18px;line-height:1.8;min-height:3.6em}
+.line.narr{font-style:italic;opacity:.85}
+.vn.period .line.narr{color:var(--ink-soft)}
+.vn[data-era="0"] .line.say::first-letter{font-family:var(--f-display);font-size:2.3em;line-height:1;float:left;margin:4px 8px 0 0;color:var(--rubric)}
+.line.prompt{font-family:var(--f-display);font-size:20px;min-height:0}
+.next-ind{position:absolute;right:16px;bottom:10px;background:none;border:0;color:inherit;opacity:.7;font-size:14px;animation:bob 1s ease-in-out infinite}
+.vn.period .next-ind{right:38px}
+@keyframes bob{50%{transform:translateY(4px)}}
+.choices{display:grid;gap:8px}
+.choice{display:flex;gap:12px;align-items:flex-start;text-align:left;border-radius:10px;padding:11px 14px;font-size:16px;line-height:1.55;font-family:var(--f-story);
+  background:rgba(34,52,75,.9);border:1.5px solid var(--line);color:var(--text)}
+.choice:hover{border-color:var(--brass)}
+.vn.period .choice{background:#fbf6ea;border-color:#d6c6a4;color:var(--ink)}
+.vn.period .choice:hover{border-color:var(--era-ink,#8b6a3a);background:#fff}
+.choice .k{flex:none;width:24px;height:24px;border-radius:50%;background:var(--brass);color:#22180a;display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;margin-top:2px}
+.vn.period .choice .k{background:var(--ink);color:var(--parch)}
+.choice.right{border-color:#3d9a6c!important;background:#e6f5ec!important;color:var(--ink)!important}
+.choice.wrong{border-color:#c4473a!important;background:#fbe7e3!important;color:var(--ink)!important}
+.choice[disabled]{cursor:default}
+.cluebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#1b2a3d;border-radius:10px;padding:10px 12px;color:var(--text)}
+.cluebar .btn{background:var(--brass);border-color:var(--brass);color:#22180a;font-weight:700}
+.cluebar span{font-size:14px;color:var(--muted)}
+.explain{background:#efe3c8;border-radius:10px;padding:10px 14px;font-size:15px;color:var(--ink)}
+.explain b{color:#7a4f12}
+.box-acts{display:flex;justify-content:flex-end;gap:8px}
+.box-acts .btn.primary{background:var(--ink);color:var(--parch);border-color:var(--ink)}
+.vn:not(.period) .box-acts .btn.primary{background:var(--brass);color:#22180a;border-color:var(--brass)}
+
+/* CG cards */
+.playlist{background:var(--night);border:1px solid var(--line);border-radius:22px;padding:14px 12px;display:grid;gap:6px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.playlist .ph{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11px;color:var(--muted);padding:0 6px 4px}
+.track{display:flex;gap:12px;align-items:center;padding:8px 10px;border-radius:8px;background:var(--panel);transition:opacity .6s,filter .6s,transform .6s}
+.track i{width:34px;height:34px;border-radius:6px;flex:none}
+.track small{display:block;color:var(--muted);font-size:12px}
+.track.gone{opacity:.15;filter:blur(1px) grayscale(1);transform:translateX(14px)}
+.track.gone b{text-decoration:line-through}
+.signal{font-family:var(--f-mono);font-size:13px;line-height:1.75;background:rgba(8,14,22,.94);border:1px solid var(--brass-lo);border-radius:10px;padding:16px;color:var(--brass-hi);white-space:pre-wrap;box-shadow:0 0 40px rgba(134,216,211,.25)}
+.warp{position:absolute;inset:0;z-index:6;background:radial-gradient(circle,#fff 0,#86d8d3 6%,#152233 40%,#05080d 75%);display:grid;place-items:center;animation:warpIn 1.8s ease-in forwards}
+.warp svg{width:160%;height:160%;animation:spin 1.4s linear infinite}
+@keyframes warpIn{0%{opacity:0;transform:scale(.6)}30%{opacity:1}100%{opacity:1;transform:scale(1.6)}}
+
+/* ---------- Title cards (period documents) ---------- */
+.tc-wrap{min-height:100%;display:grid;place-items:center}
+.tc{width:min(560px,100%);padding:34px 30px 26px;text-align:center;display:grid;gap:8px;justify-items:center;box-shadow:0 20px 60px rgba(0,0,0,.55);animation:rise .6s ease both}
+@keyframes rise{from{opacity:0;translate:0 24px}to{opacity:1;translate:0 0}}
+.tc h2{font-size:clamp(30px,6vw,46px);color:inherit}
+.tc .theme{font-family:var(--f-story);font-size:18px;margin:0}
+.tc .meta{font-family:var(--f-story);font-size:14px;opacity:.75;margin:0}
+.tc .btn{margin-top:10px}
+.tc-0{background:#efe2c0;color:#2b2016;border:3px solid #8b2a20;outline:6px double #2b4a8b;outline-offset:-14px}
+.tc-0 .illum{width:96px;height:96px;display:grid;place-items:center;background:radial-gradient(circle,#e8c35c,#b8862a);border:4px solid #2b4a8b;font-family:var(--f-goth);font-size:76px;line-height:1;color:#8b2a20;box-shadow:inset 0 0 0 3px #efe2c0}
+.tc-0 .lat{font-family:var(--f-goth);font-size:34px;color:#8b2a20;margin:4px 0 0}
+.tc-0 .lat2{font-family:var(--f-goth);font-size:20px;color:#2b4a8b;margin:0}
+.tc-0 .btn{background:#8b2a20;border-color:#8b2a20;color:#efe2c0}
+.tc-1{background:#f1e8d4;color:#1d1a16;border:1px solid #1d1a16;outline:4px double #1d1a16;outline-offset:-12px}
+.tc-1 .lat{font-family:var(--f-fell);font-size:44px;letter-spacing:.18em;margin:0;line-height:1}
+.tc-1 .lat2{font-family:var(--f-fell);font-style:italic;font-size:20px;margin:0}
+.tc-1 .orn{font-size:22px;letter-spacing:.6em}
+.tc-1 .btn{background:#1d1a16;border-color:#1d1a16;color:#f1e8d4}
+.tc-2{background:repeating-linear-gradient(#f4ecd9 0 31px,#d9cfb8 31px 32px);color:#2c2a4a;border:1px solid #c9b88f;text-align:left;justify-items:start;transform:rotate(-1deg)}
+.tc-2 .lat{font-family:var(--f-fell);font-style:italic;font-size:22px;justify-self:end;margin:0}
+.tc-2 .lat2{font-family:var(--f-fell);font-style:italic;font-size:26px;margin:6px 0 0}
+.tc-2 .btn{background:#2c2a4a;border-color:#2c2a4a;color:#f4ecd9}
+.tc-3{background:radial-gradient(circle at 50% 0,#4a2a46,#22121f);color:#f3dfc0;border:1px solid #c49a50;outline:1px solid #c49a50;outline-offset:-10px}
+.tc-3 .lat{font-family:var(--f-corm);font-style:italic;font-weight:700;font-size:56px;color:#e9c27a;margin:0;line-height:1}
+.tc-3 .lat2{font-family:var(--f-corm);font-style:italic;font-size:22px;margin:0;color:#e9c27a}
+.tc-3 .btn{background:#c49a50;border-color:#c49a50;color:#22121f}
+.tc-4{background:#f2efe6;color:#151515;border:1px solid #888;font-family:var(--f-type)}
+.tc-4 .lat{font-family:var(--f-type);font-size:24px;letter-spacing:.06em;margin:0;border-top:2px solid #151515;border-bottom:2px solid #151515;padding:6px 0;width:100%}
+.tc-4 .lat2{font-family:var(--f-type);font-size:15px;margin:0;line-height:1.7}
+.tc-4 .btn{background:#151515;border-color:#151515;color:#f2efe6}
+
+/* period document (사료) */
+.docpaper{background:#efe2c0 radial-gradient(circle at 20% 10%,rgba(255,255,255,.35),transparent 50%);color:#2b2016;border-radius:4px;padding:26px 26px 20px;display:grid;gap:10px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6);position:relative;border:1px solid #b89a62;transform:rotate(-.6deg)}
+.docpaper .kind{font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;color:#8b2a20}
+.docpaper h3{color:#2b2016;font-size:26px}
+.docpaper .src{font-family:var(--f-story);font-size:13px;color:#6b5a45;margin:0}
+.docpaper p.body{font-family:var(--f-story);font-size:17px;line-height:1.85;margin:0}
+.docpaper .wax{position:absolute;right:18px;top:-18px;width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#c4473a,#7a1f18);display:grid;place-items:center;color:#f2d3c8;font-family:var(--f-display);font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.docpaper .btn{justify-self:start;background:#2b2016;border-color:#2b2016;color:#efe2c0}
+
+/* ---------- Map ---------- */
+.map{display:grid;gap:16px}
+.chart{background:#efe2c0 radial-gradient(circle at 10% 0,rgba(255,255,255,.3),transparent 40%);color:var(--ink);border-radius:10px;padding:22px;border:1px solid #b89a62;box-shadow:inset 0 0 60px rgba(120,80,30,.3)}
+.chart h2{color:var(--ink);font-size:30px}
+.chart .eyebrow{color:#8b2a20}
+.timeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:22px 0 10px;position:relative}
+.timeline::before{content:"";position:absolute;left:8%;right:8%;top:30px;height:2px;background:repeating-linear-gradient(90deg,#8b6a3a 0 8px,transparent 8px 14px)}
+.node{position:relative;display:grid;justify-items:center;text-align:center;gap:4px;background:none;border:0;padding:0;color:var(--ink)}
+.node .dot{width:60px;height:60px;border-radius:50%;display:grid;place-items:center;background:#f7efd9;border:2px solid #b89a62;position:relative;z-index:1}
+.node.open .dot{border-color:var(--era);box-shadow:0 0 0 6px color-mix(in srgb,var(--era) 30%,transparent);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 12px color-mix(in srgb,var(--era) 10%,transparent)}}
+.node.done .dot{border-color:var(--era);background:#2b2219}
+.node.locked{opacity:.45;cursor:not-allowed}
+.node .yr{font-family:var(--f-fell);font-style:italic;font-size:15px;color:var(--ink-soft)}
+.node b{font-family:var(--f-display);font-size:21px;font-weight:400}
+.node .who{font-size:13px;color:var(--ink-soft)}
+.node .st{font-size:12px;border-radius:999px;padding:1px 10px;border:1px solid #b89a62}
+.node.open .st{background:var(--ink);color:var(--parch);border-color:var(--ink)}
+.node.done .st{background:#2b2219;color:var(--era);border-color:#2b2219}
+.node:not(.locked):hover b{color:var(--rubric)}
+.flow{display:flex;flex-wrap:wrap;gap:6px 10px;color:var(--ink-soft);font-size:14px;align-items:center;margin:0}
+.flow span{white-space:nowrap}
+.guide{display:flex;gap:12px;align-items:flex-end}
+.guide .mini{width:92px;flex:none;aspect-ratio:300/420;overflow:hidden}
+.guide .mini svg{width:100%;height:auto;display:block;animation:hover 3.2s ease-in-out infinite}
+.bubble{background:var(--panel-2);border:1px solid #2a6f73;border-radius:14px 14px 14px 4px;padding:10px 14px;font-family:var(--f-story);max-width:60ch;margin-bottom:18px}
+.bubble b{color:var(--c4);font-family:var(--f-display);font-weight:400;margin-right:6px}
+
+/* ---------- Mini games ---------- */
+.game{display:grid;gap:16px;max-width:900px;margin:0 auto}
+.game h2{font-size:clamp(24px,4vw,34px)}
+.game .rule{color:var(--muted);margin:0;max-width:66ch}
+.game>.btn,.game .panel>.btn{justify-self:start}
+.panel{background:rgba(10,16,26,.78);border:1px solid var(--line);border-radius:14px;padding:16px}
+.msg{min-height:1.6em;margin:0;font-size:16px}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.round{font-family:var(--f-mono);font-size:12px;color:var(--brass-hi)}
+.staff{width:100%;max-width:640px;height:auto;display:block;margin:0 auto;background:#efe2c0;border-radius:6px}
+.pitchpad{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.pitchpad button{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 4px;display:grid;gap:2px;justify-items:center}
+.pitchpad button b{font-family:var(--f-display);font-weight:400;font-size:20px;color:var(--parch)}
+.pitchpad button small{font-size:12px;color:var(--muted)}
+.pitchpad button:hover{border-color:var(--c0)}
+.cp-wrap{overflow-x:auto}
+.cp{display:grid;gap:4px;min-width:420px}
+.cp-row{display:grid;grid-template-columns:70px repeat(var(--n),minmax(48px,1fr));gap:4px;align-items:center}
+.cp-row>span{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right;padding-right:6px}
+.cp-up{background:var(--c1);color:#fff;border-radius:8px;text-align:center;padding:6px 0;font-family:var(--f-mono);font-size:13px}
+.cp-cell{height:30px;border-radius:6px;border:1px dashed #3a4f6e;background:rgba(255,255,255,.02)}
+.cp-cell:hover{border-color:var(--c1);border-style:solid}
+.cp-cell.sel{background:var(--parch);border:1px solid var(--parch);color:var(--ink);font-family:var(--f-mono);font-size:12px}
+.cp-cell.lock{cursor:default;opacity:.55;border-style:solid}
+.cp-cell.lock.sel{opacity:1;background:var(--brass);border-color:var(--brass);color:#22180a}
+.cp-int{text-align:center;font-size:12px;border-radius:6px;padding:3px 0;font-family:var(--f-mono)}
+.cp-int.good{background:rgba(108,199,155,.18);color:var(--ok)}
+.cp-int.bad{background:rgba(238,106,90,.2);color:var(--bad)}
+.cp-int.err{outline:2px solid var(--bad)}
+.errs{margin:0;padding-left:18px;color:var(--bad);font-size:15px}
+.mute-badge{display:inline-flex;gap:8px;align-items:center;background:#2a1720;border:1px solid var(--bad);color:#ffb3a8;border-radius:999px;padding:4px 12px;font-size:13px;width:max-content}
+.vib{width:180px;height:180px;margin:0 auto;position:relative;display:grid;place-items:center}
+.vib .core{width:70px;height:70px;border-radius:50%;background:var(--c2);transition:transform .08s}
+.vib .ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--c2);opacity:.15;transition:opacity .1s,transform .1s}
+.vib .ring.r2{inset:25px}
+.vib.on .core{transform:scale(1.35);background:var(--brass-hi)}
+.vib.on .ring{opacity:.9;transform:scale(1.06)}
+.tap{display:block;width:100%;max-width:420px;margin:0 auto;padding:22px;border-radius:16px;background:var(--panel-2);border:2px solid var(--c2);font-family:var(--f-display);font-size:22px;color:var(--parch);touch-action:none;user-select:none;-webkit-user-select:none}
+.tap small{font-family:var(--f-body);font-size:13px;color:var(--muted)}
+.tap.down{background:var(--c2);color:#fff}
+.tl{position:relative;height:56px;background:#0c141f;border-radius:8px;overflow:hidden}
+.tl i{position:absolute;height:18px;border-radius:4px}
+.tl i.t{top:8px;background:rgba(157,176,198,.3)}
+.tl i.p{top:30px;background:var(--brass-hi)}
+.tl span{position:absolute;right:8px;font-size:11px;color:var(--muted);font-family:var(--f-mono)}
+.notation{display:flex;gap:10px;align-items:flex-end;justify-content:center;font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.notation i{display:block;height:14px;border-radius:3px;background:var(--c2)}
+.qcard{display:grid;gap:12px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--text);font-size:15px}
+.opt:hover{border-color:var(--c3)}
+.opt.right{border-color:var(--ok);background:rgba(108,199,155,.15)}
+.opt.wrong{border-color:var(--bad);background:rgba(238,106,90,.12)}
+.timer{font-family:var(--f-type);font-size:clamp(56px,12vw,110px);color:var(--parch);text-align:center;font-variant-numeric:tabular-nums;line-height:1}
+.mvts{display:grid;grid-template-columns:var(--cols);gap:6px}
+.mvts div{border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-family:var(--f-type);font-size:12px;color:var(--muted);position:relative;overflow:hidden}
+.mvts div b{display:block;font-family:var(--f-fell);font-size:20px;color:var(--parch);font-weight:400}
+.mvts div.now{border-color:var(--c4);color:var(--c4)}
+.mvts div .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--c4)}
+.cue{text-align:center;font-family:var(--f-story);font-size:22px;color:var(--c4);min-height:1.6em;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips label{display:inline-flex;gap:6px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:14px}
+.chips input{accent-color:var(--c4)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{background:none;border:0;padding:7px 14px;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--brass);color:#22180a;font-weight:700}
+
+/* ---------- Overlays ---------- */
+#overlay{position:fixed;inset:0;z-index:20;background:rgba(5,9,15,.8);display:grid;place-items:center;overflow:auto;padding-block:max(16px,env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.modal{background:var(--night-2);border:1px solid var(--line);border-radius:18px;padding:22px;max-width:780px;width:100%;display:grid;gap:14px;max-height:100%;overflow:auto}
+.modal.bare{background:none;border:0;padding:0;justify-items:center;overflow:visible}
+.glitch{background:#0b0d14 repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 2px,transparent 2px 4px);border:2px solid #ff2a6d;box-shadow:6px 0 0 #2de2e6,-6px 0 0 #ff2a6d;text-align:center;justify-items:center;max-width:520px;animation:jit .3s steps(2) 4}
+@keyframes jit{50%{transform:translate(4px,-3px) skewX(3deg)}}
+.glitch h2{font-size:32px;color:#fff;text-shadow:3px 0 #ff2a6d,-3px 0 #2de2e6;animation:rgb 1.2s steps(3) infinite}
+@keyframes rgb{50%{text-shadow:-3px 1px #ff2a6d,3px -1px #2de2e6}}
+.glitch .frame{width:180px;border-radius:50%/46%;overflow:hidden;border:3px solid #ff2a6d;animation:wob 1.6s ease-in-out infinite}
+.glitch .frame svg{display:block;width:100%}
+@keyframes wob{50%{transform:rotate(-4deg) scale(1.03);filter:hue-rotate(40deg)}}
+.glitch p{margin:0;color:var(--text)}
+.glitch .cost{font-family:var(--f-mono);font-size:13px;color:#ff8fae}
+.glitch .hm{font-family:var(--f-story);color:var(--c4)}
+.award{text-align:center;justify-items:center;max-width:520px}
+.award .gem{width:150px;height:150px;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 0 22px var(--glow))}
+@keyframes float{50%{transform:translateY(-8px) rotate(4deg)}}
+.award h2{font-size:30px}
+.codex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.card{background:var(--parch);color:var(--ink);border-radius:14px;padding:14px;display:grid;gap:8px;align-content:start;border:1px solid #cdb995}
+.card .era{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:#fff;background:var(--era);border-radius:999px;padding:2px 10px;width:max-content}
+.card h3{color:var(--ink);font-size:21px}
+.card .life{font-family:var(--f-mono);font-size:11px;color:var(--ink-soft)}
+.card p{margin:0;font-size:14px;line-height:1.55}
+.card ul{margin:0;padding-left:18px;font-size:13px}
+.card .acts .btn{padding:6px 12px;font-size:13px;background:var(--ink);color:var(--parch);border-color:var(--ink)}
+.card a{font-size:13px;color:#7a4f12}
+.card.locked{background:var(--panel);color:var(--muted);border-color:var(--line);min-height:150px;place-content:center;text-align:center}
+.card.locked h3{color:var(--muted)}
+.card.bonus{background:#e9e1cf}
+.card.doc{background:#efe2c0}
+.card.doc p{font-family:var(--f-story)}
+.close-x{justify-self:end;background:none;border:1px solid var(--line);border-radius:8px;padding:4px 12px;color:var(--muted)}
+.confirm{max-width:440px}
+.log{display:grid;gap:10px;font-family:var(--f-story)}
+.log p{margin:0}
+.log b{color:var(--brass-hi);font-family:var(--f-display);font-weight:400;margin-right:6px}
+
+/* ---------- Certificate ---------- */
+.cert{background:var(--parch);color:var(--ink);border-radius:6px;padding:clamp(18px,4vw,40px);border:10px double #b8954f;display:grid;gap:14px;max-width:820px;margin:0 auto;position:relative}
+.cert-top{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;color:var(--ink-soft)}
+.cert h2{color:var(--ink);text-align:center;font-size:clamp(24px,4vw,36px)}
+.cert-name{text-align:center;font-family:var(--f-display);font-size:clamp(28px,5vw,44px);margin:0}
+.cert-name small{display:block;font-family:var(--f-body);font-size:15px;color:var(--ink-soft)}
+.cert p{margin:0;line-height:1.8;text-align:center;font-family:var(--f-story)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0}
+.stats div{border:1px solid #cdb995;border-radius:10px;padding:10px;text-align:center}
+.stats dt{font-size:12px;color:var(--ink-soft)}
+.stats dd{margin:0;font-family:var(--f-display);font-size:28px;font-variant-numeric:tabular-nums}
+.stats dd small{font-family:var(--f-mono);font-size:12px;color:var(--ink-soft);margin-left:4px}
+.cert-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.cert-cards div{border-radius:8px;padding:8px 6px;text-align:center;background:#fbf6ea;border:1px solid #d9c8a5;font-size:12px;display:grid;justify-items:center;gap:2px}
+.cert-cards b{font-family:var(--f-display);font-weight:400;font-size:14px}
+.cert-cards div.off{opacity:.35}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid #d9c8a5;padding:6px 8px;text-align:left}
+th{font-weight:700;font-size:12px;color:var(--ink-soft)}
+td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.cert-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--ink-soft)}
+.seal{width:86px;height:86px;border-radius:50%;border:3px solid #b23a2e;color:#b23a2e;display:grid;place-items:center;text-align:center;font-family:var(--f-display);font-size:15px;line-height:1.2;transform:rotate(-12deg)}
+.after{max-width:820px;margin:16px auto 0;display:grid;gap:12px}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+summary{cursor:pointer;color:var(--parch)}
+.dark-table th,.dark-table td{border-bottom-color:var(--line);color:var(--text)}
+.dark-table th{color:var(--muted)}
+.ox{font-family:var(--f-mono);font-weight:700}
+.ox.o{color:var(--ok)}.ox.x{color:var(--bad)}
+.teacher{max-width:860px;margin:0 auto;display:grid;gap:16px}
+.teacher section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;gap:10px}
+.teacher h3{font-size:22px}
+.teacher ol,.teacher ul{margin:0;padding-left:20px;color:var(--text)}
+.teacher li{margin:3px 0}
+.teacher code{font-family:var(--f-mono);font-size:13px;color:var(--brass-hi)}
+.ending{max-width:720px;margin:0 auto;display:grid;gap:16px;text-align:center;justify-items:center}
+.ending h2{font-size:clamp(30px,6vw,52px)}
+.ending .playlist{width:100%;text-align:left}
+
+/* ---------- Player bar ---------- */
+#player{display:grid;grid-template-columns:auto auto minmax(0,1fr) minmax(0,1.3fr);gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--brass);border-radius:14px;padding:8px 14px}
+.pbtn{width:42px;height:42px;border-radius:50%;background:var(--brass);border:0;display:grid;place-items:center;color:#22180a}
+.pbtn svg{width:18px;height:18px}
+.reels{display:flex;gap:6px}
+.reels i{width:20px;height:20px;border-radius:50%;background:repeating-conic-gradient(var(--muted) 0 30deg,var(--panel) 30deg 60deg);border:2px solid var(--muted)}
+#player.playing .reels i{animation:spin 1.6s linear infinite;border-color:var(--brass-hi)}
+.pmeta{min-width:0}
+.pmeta b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--parch)}
+.pmeta span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#wave{width:100%;height:42px;display:block}
+
+@media (max-width:760px){
+  .title-screen{grid-template-columns:1fr}
+  .title-screen .cassette{max-width:300px;order:-1}
+  .timeline{grid-template-columns:1fr;gap:10px}
+  .timeline::before{left:30px;right:auto;top:10px;bottom:10px;width:2px;height:auto;background:repeating-linear-gradient(180deg,#8b6a3a 0 8px,transparent 8px 14px)}
+  .node{grid-template-columns:60px minmax(0,1fr) auto;justify-items:start;text-align:left;align-items:center;column-gap:14px}
+  .node .dot{grid-row:1/4;grid-column:1}
+  .node>.yr,.node>b,.node>.who{grid-column:2}
+  .node .st{grid-column:3;grid-row:1/4}
+  .opts{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cert-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #player{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)}
+  #player .reels{display:none}
+  #stage{padding:16px}
+  .line{font-size:16px}
+  .pitchpad{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .char{height:min(70%,480px)}
+  .char.comp{height:42%;top:16%}
+  .char.img,.char.comp.img{height:74%}
+  .char.p-left{left:24%}.char.p-right{left:76%}
+  .vn-box{min-height:140px;padding:12px 16px 14px}
+  .vu{width:170px}
+  .stamp{font-size:12px}
+}
+@media (max-width:480px){
+  .hud-right .chip{padding:5px 9px;font-size:12px}
+  .slot{width:26px;height:26px}
+  .brand{font-size:17px}
+  .vn-top{flex-direction:column}
+  .stamp,.vu{max-width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+@media print{
+  body{overflow:visible;background:#fff}
+  #hud,#player,.after,#overlay,.no-print{display:none!important}
+  #app{display:block;height:auto}
+  #stage{border:0;background:#fff!important;overflow:visible;padding:0}
+}
+</style>
+
+<div id="app">
+  <header id="hud">
+    <button class="brand" id="btnHome" title="처음 화면으로">사라진 멜로디<span>Time Harmony</span></button>
+    <div class="hud-mid">
+      <div class="energy" title="타임머신 에너지">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#22344b" stroke-width="5"/><circle id="enRing" cx="20" cy="20" r="16" fill="none" stroke="#d9a648" stroke-width="5" stroke-linecap="round" stroke-dasharray="100.5" stroke-dashoffset="0"/></svg>
+        <div><b id="enNum">100</b>에너지</div>
+      </div>
+      <div class="slots" id="slots" aria-label="하모니 크리스탈"></div>
+    </div>
+    <div class="hud-right">
+      <button class="chip" id="btnCodex">음악 도감</button>
+      <button class="chip" id="btnSound" aria-pressed="true">소리 켜짐</button>
+    </div>
+  </header>
+  <main id="stage" data-era="title" tabindex="-1"></main>
+  <footer id="player">
+    <button class="pbtn" id="pPlay" aria-label="재생"></button>
+    <div class="reels" aria-hidden="true"><i></i><i></i></div>
+    <div class="pmeta"><b id="pTitle">카세트 대기 중</b><span id="pSub">음악이 나오면 여기서 다시 들을 수 있어요</span></div>
+    <canvas id="wave" aria-hidden="true"></canvas>
+  </footer>
+</div>
+<div id="overlay" hidden></div>
+
+<script>
+"use strict";
+/* =========================================================
+   공통 도우미
+   ========================================================= */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const stage=$('#stage'), overlay=$('#overlay');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const reduceMotion=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ERA_HEX=['#e8c35c','#d55b4c','#5f92e3','#de86ad','#86d8d3'];
+const ERA_INK=['#8b2a20','#3b2f24','#2c2a4a','#6a2a4a','#3a3a36'];
+const ERA_FONT=['var(--f-goth)','var(--f-fell)','var(--f-fell)','var(--f-corm)','var(--f-type)'];
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
+  del(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+const SAVE_KEY='timeHarmony.save.v2',HIST_KEY='timeHarmony.history.v1',OPT_KEY='timeHarmony.opts.v1';
+let opts=Object.assign({silence:'short'},store.get(OPT_KEY,{}));
+function freshState(name,cls){return{name:name||'',cls:cls||'',energy:100,crystals:[0,0,0,0,0],docs:[0,0,0,0,0],quiz:{},games:{},glitches:0,started:Date.now(),finished:null,histSaved:false}}
+let S=Object.assign(freshState(),store.get(SAVE_KEY,{}));
+function save(){store.set(SAVE_KEY,S)}
+function recordQuiz(id,era,q,ok){if(!(id in S.quiz)){S.quiz[id]={era,q,ok:!!ok};save()}}
+function recordGame(id,era,label,ok){if(!(id in S.games)){S.games[id]={era,label,ok:!!ok};save()}}
+const nm=t=>String(t).replace(/\{name\}/g,S.name||'너');
+
+/* =========================================================
+   음원 파일 (audio 폴더) — 있으면 실제 녹음, 없으면 합성음
+   ========================================================= */
+const AUDIO_DIR='audio/';
+const AF={
+  chant:['01_hildegard_chant','힐데가르트 성가 또는 그레고리오 성가'],
+  bach_prelude:['02_bach_prelude_C_harpsichord','바흐 평균율 1권 프렐류드 C장조 BWV 846 (하프시코드 연주)'],
+  toccata:['03_bach_toccata_d_minor','바흐 토카타와 푸가 d단조 BWV 565 (오르간)'],
+  beethoven5:['04_beethoven_symphony5','베토벤 교향곡 5번 1악장'],
+  revolutionary:['05_chopin_revolutionary_etude','쇼팽 에튀드 Op.10 No.12 「혁명」'],
+  waltz:['06_chopin_minute_waltz','쇼팽 왈츠 Op.64 No.1 「강아지 왈츠」'],
+  nocturne:['07_chopin_nocturne_op9_2','쇼팽 녹턴 Op.9 No.2'],
+  tone_row:['08_schoenberg_suite_op25','쇤베르크 피아노 모음곡 Op.25'],
+  mozart:['09_mozart_eine_kleine','모차르트 아이네 클라이네 나흐트무지크 1악장'],
+  spring:['10_vivaldi_spring','비발디 사계 중 봄 1악장'],
+  pop:['11_ending_pop','엔딩용 신나는 팝 음악'],
+  wind:['12_ambience_wind','환경음: 바람 (반복 재생)'],
+  rain:['13_ambience_rain','환경음: 빗소리 (반복 재생)'],
+  crowd:['14_ambience_crowd','환경음: 관객 웅성거림 (반복 재생)'],
+  bgm:['15_prologue_bgm','프롤로그 배경음악 (잔잔한 곡, 반복 재생)']
+};
+const AOK={};
+function probeAudio(){Object.entries(AF).forEach(([id,[f]])=>{const a=new Audio();a.preload='metadata';a.onloadedmetadata=()=>{AOK[id]=true};a.onerror=()=>{AOK[id]=false};a.src=AUDIO_DIR+f+'.mp3'})}
+const fileUrl=id=>AUDIO_DIR+AF[id][0]+'.mp3';
+
+/* =========================================================
+   그림 파일 (images 폴더) — 있으면 그림, 없으면 기본 SVG
+   ========================================================= */
+const IMG_DIR='images/';
+const BG_KEYS={room:'내 방 (아침)',classroom:'교실',hallway:'방과 후 복도',musicroom:'음악실',med:'중세 수녀원',bar:'바로크 바이마르 구금실',cla:'고전 하일리겐슈타트 서재',rom:'낭만 파리 살롱',mod:'현대 매버릭 콘서트홀'};
+const CH_KEYS={yun:['normal','smile','shock','sad','serious'],harmo:['normal','smile','serious'],hildegard:['normal','happy','sad'],bach:['normal','happy','sad'],beethoven:['normal','happy','sad'],chopin:['normal','happy','sad'],cage:['normal','happy','sad']};
+const IOK={};
+let artT=null;
+function refreshArt(){clearTimeout(artT);artT=setTimeout(()=>{
+  const b=$('#vbg'); if(b&&b.dataset.k&&IOK['bg_'+b.dataset.k]&&!b.querySelector('img')){b.innerHTML=`<img class="bgimg" src="${IOK['bg_'+b.dataset.k]}" alt="">`;b.classList.add('photo')}
+  $$('#chars .char').forEach(el=>{if(!el.querySelector('img')&&(el.dataset.c!=='comp'||E))vnShow(el.dataset.c,el.dataset.e)});
+},120)}
+function tryImg(key,exts,i=0){if(i>=exts.length){IOK[key]=null;return}const im=new Image();im.onload=()=>{IOK[key]=IMG_DIR+key+'.'+exts[i];refreshArt()};im.onerror=()=>tryImg(key,exts,i+1);im.src=IMG_DIR+key+'.'+exts[i]}
+function probeImages(){Object.keys(BG_KEYS).forEach(k=>tryImg('bg_'+k,['jpg','png','webp']));Object.entries(CH_KEYS).forEach(([c,es])=>es.forEach(e=>tryImg(`ch_${c}_${e}`,['png','webp'])))}
+const chImg=(c,e)=>IOK[`ch_${c}_${e||'normal'}`]||IOK[`ch_${c}_normal`]||null;
+function pic(c,e){const s=chImg(c,e);return s?`<img src="${s}" alt="">`:(c==='yun'?spriteYun(e):spriteHarmo(e))}
+
+/* =========================================================
+   오디오 엔진 (Web Audio 합성)
+   ========================================================= */
+const A={ctx:null,cur:null,last:null,muted:false};
+const NI={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function midi(n){const m=/^([A-G])(#|b)?(-?\d)$/.exec(n);return NI[m[1]]+(m[2]==='#'?1:m[2]==='b'?-1:0)+12*(+m[3]+1)}
+const hz=m=>440*Math.pow(2,(m-69)/12);
+function ac(){
+  if(!A.ctx){
+    const C=window.AudioContext||window.webkitAudioContext; if(!C) return null;
+    const c=A.ctx=new C();
+    A.out=c.createGain(); A.out.gain.value=A.muted?0:1;
+    A.comp=c.createDynamicsCompressor(); A.comp.threshold.value=-16; A.comp.ratio.value=4;
+    A.an=c.createAnalyser(); A.an.fftSize=1024;
+    A.comp.connect(A.out); A.out.connect(A.an); A.an.connect(c.destination);
+    A.conv=c.createConvolver(); A.conv.buffer=impulse(c,2.6); A.conv.connect(A.comp);
+    A.noise=noiseBuf(c);
+  }
+  if(A.ctx.state==='suspended') A.ctx.resume();
+  return A.ctx;
+}
+function impulse(c,sec){const len=c.sampleRate*sec|0,b=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2)}return b}
+function noiseBuf(c){const len=c.sampleRate*2,b=c.createBuffer(1,len,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;return b}
+function osc(type,f,t,end,det=0){const o=A.ctx.createOscillator();o.type=type;o.frequency.value=f;o.detune.value=det;o.start(t);o.stop(end);return o}
+function gn(v,to){const g=A.ctx.createGain();g.gain.value=v;if(to)g.connect(to);return g}
+function filt(type,f,q,to){const b=A.ctx.createBiquadFilter();b.type=type;b.frequency.value=f;if(q!=null)b.Q.value=q;if(to)b.connect(to);return b}
+function env(g,t,a,hold,r,peak){const p=g.gain;p.setValueAtTime(0,t);p.linearRampToValueAtTime(peak,t+a);p.setValueAtTime(peak,t+Math.max(a,hold));p.linearRampToValueAtTime(0,t+Math.max(a,hold)+r)}
+let shaperCurve=null;
+function curve(){if(shaperCurve)return shaperCurve;const n=1024,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i*2/n-1;c[i]=(3+40)*x*20*Math.PI/180/(Math.PI+40*Math.abs(x))}return shaperCurve=c}
+function play(inst,n,t,dur,vel,bus){
+  const c=A.ctx, m=typeof n==='number'?n:midi(n), f=hz(m), g=gn(0,bus); vel=vel??.8;
+  switch(inst){
+    case 'voice':{ const end=t+dur+.6;
+      const pre=gn(1); const f1=filt('bandpass',700,4,g), f2=filt('bandpass',1150,6,g); pre.connect(f1); pre.connect(f2);
+      const lfo=osc('sine',5.2,t,end), lg=gn(f*.006); lfo.connect(lg);
+      [-9,0,9].forEach(d=>{const o=osc('sawtooth',f,t,end,d);lg.connect(o.frequency);o.connect(pre)});
+      env(g,t,.16,dur,.35,vel*.9); break;}
+    case 'organ':{ const end=t+dur+.3;
+      [[1,1],[2,.6],[3,.35],[4,.3],[6,.15],[8,.12]].forEach(([k,a])=>{const o=osc('sine',f*k,t,end);o.connect(gn(a,g))});
+      env(g,t,.03,dur,.14,vel*.16); break;}
+    case 'harpsi':{ const dec=clamp(1.7-(m-48)*.02,.5,1.7), end=t+dec+.3;
+      const lp=filt('lowpass',7000,1,g); lp.frequency.setValueAtTime(7000,t); lp.frequency.exponentialRampToValueAtTime(1600,t+.25);
+      osc('sawtooth',f,t,end).connect(lp); osc('square',f*2,t,end).connect(gn(.22,lp));
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vel*.24,t+.004); g.gain.setTargetAtTime(0,t+.004,dec/4);
+      if(dur<dec) g.gain.setTargetAtTime(0,t+dur,.07); break;}
+    case 'piano':{ const dec=clamp(3.2-(m-36)*.035,.6,3.2), end=t+Math.min(dur+1,dec)+.5;
+      const lp=filt('lowpass',900+vel*3800,.7,g);
+      osc('triangle',f,t,end).connect(lp); osc('sine',f,t,end).connect(gn(.7,lp)); osc('sine',f*2,t,end).connect(gn(.12+vel*.12,lp));
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vel*.34,t+.005); g.gain.setTargetAtTime(0,t+.005,dec/3.5); g.gain.setTargetAtTime(0,t+dur,.12); break;}
+    case 'strings':{ const end=t+dur+.4; const lp=filt('lowpass',1900,.6,g);
+      [-8,0,8].forEach(d=>osc('sawtooth',f,t,end,d).connect(lp));
+      env(g,t,.025,dur,.2,vel*.12); break;}
+    case 'pluck':{ const end=t+dur+.5; const lp=filt('lowpass',3200,2,g); lp.frequency.setValueAtTime(3200,t); lp.frequency.exponentialRampToValueAtTime(420,t+.3);
+      osc('sawtooth',f,t,end,-6).connect(lp); osc('sawtooth',f,t,end,6).connect(lp);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vel*.14,t+.005); g.gain.setTargetAtTime(0,t+.01,.16); break;}
+    case 'bass':{ const end=t+dur+.2; const lp=filt('lowpass',650,1,g);
+      osc('sine',f,t,end).connect(lp); osc('square',f,t,end).connect(gn(.18,lp)); env(g,t,.008,dur,.06,vel*.42); break;}
+    case 'lead':{ const end=t+dur+.3; const lp=filt('lowpass',2600,1,g);
+      const o=osc('square',f,t,end); const v=osc('sine',5.5,t,end); v.connect(gn(f*.004)).connect(o.frequency); o.connect(lp);
+      env(g,t,.02,dur*.9,.12,vel*.09); break;}
+    case 'guitar':{ const end=t+dur+.2; const sh=c.createWaveShaper(); sh.curve=curve(); const lp=filt('lowpass',3400,1,g); sh.connect(lp);
+      [1,1.5,2].forEach(k=>osc('sawtooth',f*k,t,end).connect(gn(.35,sh))); env(g,t,.005,dur,.08,vel*.3); break;}
+    case 'bell':{ const end=t+2.6;
+      [[1,1],[2.76,.3],[5.4,.12]].forEach(([k,a])=>osc('sine',f*k,t,end).connect(gn(a,g)));
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vel*.22,t+.005); g.gain.exponentialRampToValueAtTime(.0005,t+2.4); break;}
+  }
+}
+function noiseSrc(t,end){const s=A.ctx.createBufferSource();s.buffer=A.noise;s.loop=true;s.start(t);if(end)s.stop(end);return s}
+function kick(t,bus,v=1){const g=gn(0,bus),o=osc('sine',150,t,t+.35);o.frequency.exponentialRampToValueAtTime(42,t+.13);o.connect(g);g.gain.setValueAtTime(v*.9,t);g.gain.exponentialRampToValueAtTime(.001,t+.32)}
+function snare(t,bus,v=1){const g=gn(0,bus);noiseSrc(t,t+.2).connect(filt('highpass',1400,.7,g));g.gain.setValueAtTime(v*.32,t);g.gain.exponentialRampToValueAtTime(.001,t+.16);const g2=gn(0,bus);osc('triangle',190,t,t+.1).connect(g2);g2.gain.setValueAtTime(v*.3,t);g2.gain.exponentialRampToValueAtTime(.001,t+.08)}
+function hat(t,bus,v=1){const g=gn(0,bus);noiseSrc(t,t+.06).connect(filt('highpass',7500,.7,g));g.gain.setValueAtTime(v*.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.045)}
+function ev(inst,bus,t,u,list,dv){let end=0;for(const [p,n,l,v] of list){(Array.isArray(n)?n:[n]).forEach(k=>play(inst,k,t+p*u,l*u,v??dv,bus));end=Math.max(end,(p+l)*u)}return end}
+function seq(inst,bus,t,u,list,dv){let p=0;const L=[];for(const [n,l,v] of list){if(n)L.push([p,n,l,v]);p+=l}ev(inst,bus,t,u,L,dv);return p*u}
+
+/* ---------- 곡 조각(클립): 파일이 없을 때 쓰는 합성 편곡 ---------- */
+const CLIPS={
+  chant:{title:'중세 성가 — 단선율',sub:'반주 없이 한 선율을 함께 부르는 노래',len:15,rev:.75,b:(t,bus)=>seq('voice',bus,t,60/80,[['D4',1],['F4',1],['G4',1],['A4',2],['G4',1],['A4',1],['C5',1],['A4',1],['G4',1],['F4',2],['E4',1],['F4',1],['G4',1],['E4',1],['D4',3]],.8)},
+  bach_prelude:{title:'바흐 · 평균율 클라비어곡집 1권 프렐류드 C장조',sub:'하프시코드',len:13,rev:.3,b:(t,bus)=>{
+    const u=60/76/4, bars=[['C4','E4','G4','C5','E5'],['C4','D4','A4','D5','F5'],['B3','D4','G4','D5','F5'],['C4','E4','G4','C5','E5']];const L=[];
+    bars.forEach((n,k)=>{for(let h=0;h<2;h++){const p=k*16+h*8;L.push([p,n[0],8,.75],[p+1,n[1],7,.7]);[2,3,4,2,3,4].forEach((j,q)=>L.push([p+2+q,n[j],1,.7]))}});
+    L.push([64,['C3','C4','E4','G4','C5'],12,.8]);return ev('harpsi',bus,t,u,L)}},
+  toccata:{title:'바흐 · 토카타와 푸가 d단조 (BWV 565)',sub:'파이프 오르간',len:12,rev:.85,b:(t,bus)=>{
+    const L=[];const run=(p,o)=>{const x=k=>k.replace(/\d/,d=>+d+o);
+      L.push([p,[x('A4'),x('A5')],1],[p+1,[x('G4'),x('G5')],1],[p+2,[x('A4'),x('A5')],12],[p+17,[x('G4'),x('G5')],1.5],[p+18.5,[x('F4'),x('F5')],1.5],[p+20,[x('E4'),x('E5')],1.5],[p+21.5,[x('D4'),x('D5')],1.5],[p+23,[x('C#4'),x('C#5')],6],[p+29,[x('D4'),x('D5')],9])};
+    run(0,0);run(40,-1);L.push([82,'D2',30],[84,['C#3','E3','G3','Bb3'],12],[96,['D3','F3','A3','D4'],16]);return ev('organ',bus,t,.1,L,.8)}},
+  beethoven5:{title:'베토벤 · 교향곡 5번 1악장',sub:'관현악 · “운명의 동기”',len:11,rev:.4,b:(t,bus)=>{
+    const L=[[1,['G3','G4'],.9],[2,['G3','G4'],.9],[3,['G3','G4'],.9],[4,['Eb3','Eb4'],12],[17,['F3','F4'],.9],[18,['F3','F4'],.9],[19,['F3','F4'],.9],[20,['D3','D4'],16],
+      [38,'G4',.9],[39,'G4',.9],[40,'G4',.9],[41,'Ab4',4],[41,'C3',16,.5],[46,'Ab4',.9],[47,'Ab4',.9],[48,'Ab4',.9],[49,'G4',4],[54,'Eb5',.9],[55,'Eb5',.9],[56,'Eb5',.9],[57,'D5',4],
+      [62,['C3','G3','Eb4','C5'],1.6,1],[64,['C3','G3','Eb4','C5'],1.6,1],[67,['G2','D4','F4','B4'],10,1]];
+    return ev('strings',bus,t,60/108/4*2,L,.9)}},
+  fur_elise:{title:'베토벤 · 엘리제를 위하여',sub:'피아노 · 여리게(p) 한 번, 세게(f) 한 번',len:14,rev:.3,synthOnly:true,b:(t,bus)=>{
+    const ph=[[0,'E5',1],[1,'D#5',1],[2,'E5',1],[3,'D#5',1],[4,'E5',1],[5,'B4',1],[6,'D5',1],[7,'C5',1],[8,'A4',3],[8,'A2',1],[9,'E3',1],[10,'A3',1],[11,'C4',1],[12,'E4',1],[13,'A4',1],[14,'B4',3],[14,'E2',1],[15,'E3',1],[16,'G#3',1],[17,'E4',1],[18,'G#4',1],[19,'B4',1],[20,'C5',3],[20,'A2',1],[21,'E3',1],[22,'A3',1],[23,'E4',1],
+      [24,'E5',1],[25,'D#5',1],[26,'E5',1],[27,'D#5',1],[28,'E5',1],[29,'B4',1],[30,'D5',1],[31,'C5',1],[32,'A4',4],[32,'A2',1],[33,'E3',1],[34,'A3',3]];
+    const L=[];[[0,.22],[38,.95]].forEach(([o,v])=>ph.forEach(([p,n,l])=>L.push([p+o,n,l,v])));return ev('piano',bus,t,.19,L)}},
+  revolutionary:{title:'쇼팽 · 혁명 에튀드 Op.10-12',sub:'피아노 · 왼손이 폭풍처럼 몰아쳐요',len:10,rev:.3,b:(t,bus)=>{
+    const L=[],down=['Ab4','G4','F4','D4','C4','B3','Ab3','G3','F3','D3','C3','B2','Ab2','G2','F2','D2'],up=['G2','B2','D3','F3','G3','B3','D4','F4'];
+    const cm=['C2','G2','C3','Eb3','G3','C4','Eb4','C4','G3','Eb3','C3','G2'],gm=['G1','D2','G2','B2','D3','G3','B3','G3','D3','B2','G2','D2'];
+    L.push([0,['D5','F5','Ab5','B5','G2','G3'],5,1]);down.forEach((n,i)=>L.push([6+i,n,1,i?.62:.9]));
+    L.push([22,['D5','F5','Ab5','B5','G2'],3,1]);down.forEach((n,i)=>L.push([26+i,n,1,.62]));up.forEach((n,i)=>L.push([42+i,n,1,.7]));
+    [[50,cm],[62,gm],[74,gm],[86,cm]].forEach(([p,a])=>a.forEach((n,i)=>L.push([p+i,n,1,.55])));
+    [[50,'C',8],[58,'D',2],[60,'Eb',2],[62,'F',4],[66,'Eb',4],[70,'D',4],[74,'Bb',4,4],[78,'Ab',4,4],[82,'G',8,4]].forEach(([p,n,l,o])=>L.push([p,[n+(o||5),n+((o||5)+1)],l,1]));
+    L.push([98,['C2','C3','C5','Eb5','G5','C6'],10,1]);return ev('piano',bus,t,.085,L)}},
+  waltz:{title:'쇼팽 · 강아지 왈츠 Op.64-1',sub:'피아노 · 3박자 왈츠',len:10,rev:.25,b:(t,bus)=>{
+    const L=[];for(let i=0;i<14;i++)L.push([i*.5,i%2?'G4':'Ab4',.5,.6]);
+    const R=[['Ab4','G4','Ab4','C5','Bb4','Ab4'],['G4','Ab4','Bb4','Ab4','G4','Ab4'],['Ab4','G4','Ab4','C5','Bb4','Ab4'],['G4','Ab4','Bb4','C5','Db5','Eb5'],['F5','Eb5','Db5','Eb5','F5','Gb5'],['Ab5','Gb5','F5','Eb5','Db5','C5'],['Bb4','C5','Db5','Eb5','F5','Ab5'],['Db6','Ab5','F5','Db5','Ab4','F4']];
+    const LH=[['Db3',['F3','Ab3','Db4']],['Db3',['F3','Ab3','Db4']],['Db3',['F3','Ab3','Db4']],['Ab2',['Gb3','C4','Eb4']],['Db3',['F3','Ab3','Db4']],['Ab2',['Gb3','C4','Eb4']],['Gb2',['Gb3','Bb3','Db4']],['Db3',['F3','Ab3','Db4']]];
+    [0,1,2,3,4,5,6,7,0,1,2,7].forEach((b,k)=>{const p=7+k*6;R[b].forEach((n,i)=>L.push([p+i,n,1,i===0?.75:.6]));L.push([p,LH[b][0],2,.7],[p+2,LH[b][1],1.6,.42],[p+4,LH[b][1],1.6,.42])});
+    return ev('piano',bus,t,.125,L)}},
+  nocturne:{title:'쇼팽 · 녹턴 Op.9-2',sub:'피아노 · 밤의 노래',len:14,rev:.45,b:(t,bus)=>{
+    const R=[[0,'Bb4',1],[1,'G5',4],[5,'F5',1],[6,'G5',2],[8,'F5',1],[9,'Eb5',3],[12,'Bb4',3],[15,'G5',2],[17,'C5',1],[18,'C6',2],[20,'G5',1],[21,'Bb5',2],[23,'Ab5',1],[24,'G5',2],[26,'F5',1],[27,'G5',2],[29,'D5',1],[30,'Eb5',3],[33,'C5',3],[36,'Bb4',1],[37,'D6',2],[39,'C6',1],[40,'Bb5',1],[41,'Ab5',1],[42,'G5',1],[43,'Ab5',1],[44,'C5',1],[45,'D5',1],[46,'Eb5',6]].map(x=>[...x,.62]);
+    const H=[[1,'Eb2',['G3','Bb3','Eb4']],[7,'Eb2',['G3','Bb3','Eb4']],[13,'C2',['G3','C4','Eb4']],[19,'Ab1',['Ab3','C4','Eb4']],[25,'Bb1',['F3','Ab3','D4']],[31,'Eb2',['G3','Bb3','Eb4']],[37,'Bb1',['F3','Ab3','D4']],[43,'Eb2',['G3','Bb3','Eb4']],[49,'Eb2',['G3','Bb3','Eb4']]];
+    const L=[...R];H.forEach(([p,b,c])=>{L.push([p,b,3,.45],[p+1,c,1,.22],[p+2,c,1,.2],[p+3,b,3,.35],[p+4,c,1,.2],[p+5,c,1,.18])});return ev('piano',bus,t,.27,L)}},
+  tone_row:{title:'쇤베르크 · 12음 음렬 (모음곡 Op.25)',sub:'피아노 · 12개 음을 한 번씩',len:10,rev:.35,b:(t,bus)=>ev('piano',bus,t,.25,[[0,'E4',1,.6],[1,'F4',1,.5],[2,'G4',2,.7],[4,'Db5',1,.8],[5,'Gb4',3,.5],[8,['Eb4','Ab4'],2,.7],[10,'D5',1,.9],[11,'B3',1,.4],[12,['C4','A4'],2,.6],[14,'Bb4',4,.5],[19,'Bb4',1,.5],[20,'A4',1,.6],[21,'C4',1,.4],[22,'B3',2,.7],[24,'D5',1,.8],[25,'Ab4',1,.5],[26,'Eb4',2,.6],[28,'Gb4',1,.7],[29,'Db5',2,.9],[31,['G4','F4'],2,.6],[33,'E4',5,.5]])},
+  mozart:{title:'모차르트 · 아이네 클라이네 나흐트무지크',sub:'현악 합주 · 1악장 첫머리',len:8,rev:.3,b:(t,bus)=>{
+    const m=[[0,'G4',2],[3,'D4',1],[4,'G4',2],[7,'D4',1],[8,'G4',1],[9,'D4',1],[10,'G4',1],[11,'B4',1],[12,'D5',4],[16,'C5',2],[19,'A4',1],[20,'C5',2],[23,'A4',1],[24,'C5',1],[25,'A4',1],[26,'F#4',1],[27,'A4',1],[28,'D4',4]];
+    const L=[];m.forEach(([p,n,l])=>{L.push([p,n,l*.85],[p,n.replace(/\d/,d=>d-1),l*.85])});return ev('strings',bus,t,.23,L,.85)}},
+  spring:{title:'비발디 · 사계 중 「봄」 1악장',sub:'현악 합주',len:7,rev:.3,b:(t,bus)=>{
+    const m=[[0,'E5',1],[1,'G#5',1],[2,'G#5',1],[3,'G#5',1],[4,'F#5',.5],[4.5,'E5',.5],[5,'B5',3],[8,'B5',.5],[8.5,'A5',.5],[9,'G#5',1],[10,'G#5',1],[11,'G#5',1],[12,'F#5',.5],[12.5,'E5',.5],[13,'B5',3]];
+    const L=m.map(([p,n,l])=>[p,n,l*.9]);[[1,['E3','B3']],[5,['E3','G#3']],[9,['E3','B3']],[13,['E3','G#3']]].forEach(([p,c])=>L.push([p,c,3.6,.5]));return ev('strings',bus,t,.24,L,.85)}},
+  pop:{title:'돌아온 음악 — 지금 우리의 노래',sub:'신시사이저 · 드럼 · 베이스',len:18,flen:120,rev:.15,b:(t,bus)=>{
+    const u=60/112/2, prog=[['A2',['A3','C4','E4']],['F2',['F3','A3','C4']],['C3',['G3','C4','E4']],['G2',['G3','B3','D4']]];
+    for(let bar=0;bar<8;bar++){const [bs,ch]=prog[bar%4],p=bar*8;
+      for(let k=0;k<8;k++){hat(t+(p+k)*u,bus,k%2?.5:.85);play('bass',bs,t+(p+k)*u,u*.85,k%2?.6:.9,bus)}
+      kick(t+p*u,bus);kick(t+(p+3)*u,bus,.7);kick(t+(p+4)*u,bus);snare(t+(p+2)*u,bus);snare(t+(p+6)*u,bus);
+      [1,3,5,7].forEach(k=>ch.forEach(n=>play('pluck',n,t+(p+k)*u,u*.8,.6,bus)))}
+    seq('lead',bus,t+32*u,u,[['E5',2],['D5',1],['C5',1],['D5',2],['E5',2],['C5',3],['A4',1],['G4',2],['A4',2],['C5',2],['D5',2],['E5',3],['G5',1],['E5',2],['D5',2],['C5',4]],.8);
+    return 64*u+.4}},
+  riff:{title:'타임라인 오류! 바로크 록 솔로',sub:'전자기타 (1717년에는 없던 악기)',len:3,rev:.1,synthOnly:true,b:(t,bus)=>{
+    const L=[[0,'E2',1],[1,'E2',1],[2,'D2',1],[3,'E2',2],[5,'G2',1],[6,'E2',1],[7,'A2',2],[9,'G2',3]];L.forEach(x=>kick(t+x[0]*.14,bus,.6));return ev('guitar',bus,t,.14,L,.9)}},
+  ambient:{title:'4분 33초 — 공연장 주변의 소리',sub:'바람 · 빗소리 · 관객',len:Infinity,rev:.35,ambient:true,b:ambientBuild}
+};
+function ambientBuild(t,bus,ctl){
+  const wind=gn(0,bus), wf=filt('bandpass',500,.8,wind); const ns1=noiseSrc(t); ns1.connect(wf);
+  const rain=gn(0,bus), rf=filt('highpass',2200,.5,rain); const ns2=noiseSrc(t); ns2.connect(rf);
+  const crowd=gn(0,bus), cf=filt('lowpass',380,.7,crowd); const ns3=noiseSrc(t); ns3.connect(cf);
+  ctl.mode='wind'; const ivs=[];
+  const set=()=>{const c=A.ctx.currentTime,m=ctl.mode;
+    wind.gain.setTargetAtTime(m==='wind'?.05+Math.random()*.06:.015,c,1.2); wf.frequency.setTargetAtTime(300+Math.random()*600,c,1.5);
+    rain.gain.setTargetAtTime(m==='rain'?.022+Math.random()*.01:0,c,1);
+    crowd.gain.setTargetAtTime(m==='crowd'?.05+Math.random()*.05:0,c,.8)};
+  set(); ivs.push(setInterval(set,1500));
+  ivs.push(setInterval(()=>{const c=A.ctx.currentTime+.05,m=ctl.mode;
+    if(m==='wind'&&Math.random()<.35){const f=2200+Math.random()*1800,g=gn(0,bus),o=osc('sine',f,c,c+.5);o.frequency.setValueAtTime(f,c);o.frequency.exponentialRampToValueAtTime(f*1.4,c+.08);o.frequency.exponentialRampToValueAtTime(f*.9,c+.16);o.connect(g);g.gain.setValueAtTime(0,c);g.gain.linearRampToValueAtTime(.03,c+.02);g.gain.exponentialRampToValueAtTime(.0005,c+.2)}
+    if(m==='rain'){for(let i=0;i<3;i++){const d=c+Math.random()*.4,g=gn(0,bus);osc('sine',1800+Math.random()*2500,d,d+.06).connect(g);g.gain.setValueAtTime(.02,d);g.gain.exponentialRampToValueAtTime(.0005,d+.05)}}
+    if(m==='crowd'&&Math.random()<.18){const g=gn(0,bus);noiseSrc(c,c+.35).connect(filt('bandpass',500+Math.random()*400,2,g));g.gain.setValueAtTime(0,c);g.gain.linearRampToValueAtTime(.12,c+.03);g.gain.exponentialRampToValueAtTime(.001,c+.3)}
+    if(m==='crowd'&&Math.random()<.1){const g=gn(0,bus),o=osc('sawtooth',90+Math.random()*40,c,c+.4);o.connect(filt('lowpass',600,4,g));g.gain.setValueAtTime(0,c);g.gain.linearRampToValueAtTime(.04,c+.1);g.gain.linearRampToValueAtTime(0,c+.38)}
+  },500));
+  ctl.cleanup=()=>{ivs.forEach(clearInterval);[ns1,ns2,ns3].forEach(s=>{try{s.stop()}catch(e){}})};
+  return Infinity;
+}
+
+/* ---------- 재생 ---------- */
+function playClip(id,opt={}){
+  const key=typeof id==='string'?id:null, clip=key?CLIPS[key]:id;
+  if(key&&AOK[key]&&!clip.synthOnly&&!clip.ambient&&!opt.synth) return playFile(key,opt.limit??clip.flen??20);
+  if(key==='ambient'&&AOK.wind&&AOK.rain&&AOK.crowd) return playAmbientFiles(opt.limit);
+  if(!ac()) return 0;
+  stopClip(true);
+  const bus=gn(1,A.comp), send=gn(clip.rev||.2,A.conv); bus.connect(send);
+  const ctl={}, t0=A.ctx.currentTime+.06, dur=clip.b(t0,bus,ctl);
+  const cur=A.cur={clip,id,bus,send,ctl,done:false};
+  A.last=id; setPlayer();
+  const lim=opt.limit||(isFinite(dur)?dur:0);
+  if(lim){cur.timer=setTimeout(()=>{if(A.cur===cur){ if(clip.ambient) stopClip(); else {cur.done=true;setPlayer()} }},lim*1000+300)}
+  return dur;
+}
+function playFile(id,lim){
+  stopClip(true);
+  const a=new Audio(fileUrl(id)); a.muted=A.muted;
+  const cur=A.cur={id,clip:Object.assign({},CLIPS[id],{sub:'녹음 음원 · '+AF[id][1]}),file:a,ctl:{},done:false}; A.last=id; setPlayer();
+  a.play().catch(()=>{});
+  a.onended=()=>{if(A.cur===cur){cur.done=true;setPlayer()}};
+  if(lim&&isFinite(lim)) cur.timer=setTimeout(()=>fadeFile(cur),lim*1000);
+  return lim;
+}
+function fadeFile(cur){const a=cur.file;let v=1;const iv=setInterval(()=>{v-=.08;if(v<=0){clearInterval(iv);a.pause();if(A.cur===cur){cur.done=true;setPlayer()}}else a.volume=Math.max(0,v)},60)}
+function playAmbientFiles(lim){
+  stopClip(true);
+  const els={};['wind','rain','crowd'].forEach(k=>{const a=new Audio(fileUrl(k));a.loop=true;a.volume=0;a.muted=A.muted;a.play().catch(()=>{});els[k]=a});
+  const ctl={mode:'wind'}; const iv=setInterval(()=>{for(const k in els){const tg=k===ctl.mode?1:.08;els[k].volume=clamp(els[k].volume+(tg-els[k].volume)*.2,0,1)}},150);
+  ctl.cleanup=()=>{clearInterval(iv);Object.values(els).forEach(e=>e.pause())};
+  const cur=A.cur={id:'ambient',clip:CLIPS.ambient,ctl,files:els,done:false}; A.last='ambient'; setPlayer();
+  if(lim) cur.timer=setTimeout(()=>{if(A.cur===cur)stopClip()},lim*1000);
+  return Infinity;
+}
+function stopClip(silent){
+  const cur=A.cur; if(!cur) return;
+  A.cur=null; clearTimeout(cur.timer);
+  if(cur.ctl&&cur.ctl.cleanup) cur.ctl.cleanup();
+  if(cur.file){cur.file.pause()}
+  if(cur.bus){try{cur.bus.gain.setTargetAtTime(0,A.ctx.currentTime,.04)}catch(e){} setTimeout(()=>{try{cur.bus.disconnect();cur.send.disconnect()}catch(e){}},500)}
+  if(!silent) setPlayer();
+}
+function sfx(kind){
+  if(!ac()) return; const c=A.ctx,t=c.currentTime+.02,bus=gn(1,A.comp);bus.connect(gn(.25,A.conv));
+  if(kind==='chime'){['C6','E6','G6','C7'].forEach((n,i)=>play('bell',n,t+i*.12,1,.9,bus))}
+  if(kind==='rewind'){const g=gn(0,bus),o=osc('sawtooth',1400,t,t+.7);o.frequency.exponentialRampToValueAtTime(120,t+.65);o.connect(filt('bandpass',900,3,g));noiseSrc(t,t+.7).connect(gn(.3,g));g.gain.setValueAtTime(.25,t);g.gain.linearRampToValueAtTime(0,t+.7)}
+  if(kind==='blip'){play('bell','A5',t,.2,.35,bus)}
+  if(kind==='buzz'){const g=gn(0,bus);osc('square',110,t,t+.25).connect(filt('lowpass',800,1,g));g.gain.setValueAtTime(.12,t);g.gain.linearRampToValueAtTime(0,t+.24)}
+  if(kind==='static'){const g=gn(0,bus);noiseSrc(t,t+1.2).connect(filt('bandpass',2400,.8,g));g.gain.setValueAtTime(.12,t);g.gain.linearRampToValueAtTime(.02,t+1.1)}
+  if(kind==='warp'){const g=gn(0,bus),o=osc('sawtooth',120,t,t+1.8);o.frequency.exponentialRampToValueAtTime(2400,t+1.7);o.connect(filt('lowpass',3000,6,g));g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.18,t+1.2);g.gain.linearRampToValueAtTime(0,t+1.8);['C5','E5','G5','C6','E6','G6'].forEach((n,i)=>play('bell',n,t+.9+i*.08,1,.6,bus))}
+  setTimeout(()=>{try{bus.disconnect()}catch(e){}},3500);
+}
+function playNotes(title,inst,notes,u,rev){return playClip({title,sub:'',rev:rev??.6,b:(t,bus)=>seq(inst,bus,t,u,notes.map(n=>[n,1]),.8)},{})}
+
+/* 프롤로그 배경음악 (별도 채널) */
+const BGM={el:null,syn:null};
+function bgmStart(){
+  if(BGM.el||BGM.syn) return;
+  if(AOK.bgm){const a=new Audio(fileUrl('bgm'));a.loop=true;a.volume=.35;a.muted=A.muted;a.play().catch(()=>{});BGM.el=a;return}
+  if(!ac()) return;
+  const bus=gn(.5,A.comp); bus.connect(gn(.35,A.conv)); const u=.3;
+  const bars=[['C5','E5','G5','E5','C6','G5','E5','G5'],['A4','C5','E5','C5','A5','E5','C5','E5'],['F4','A4','C5','A4','F5','C5','A4','C5'],['G4','B4','D5','B4','G5','D5','B4','D5']];
+  const loop=()=>{const t=A.ctx.currentTime+.05;bars.forEach((b,i)=>{b.forEach((n,k)=>play('bell',n,t+(i*8+k)*u,u,.38,bus));play('organ',['C3','A2','F2','G2'][i],t+i*8*u,8*u,.35,bus)})};
+  loop(); BGM.syn={bus,iv:setInterval(loop,32*u*1000)};
+}
+function bgmStop(){
+  if(BGM.el){const a=BGM.el;BGM.el=null;let v=a.volume;const iv=setInterval(()=>{v-=.04;if(v<=0){clearInterval(iv);a.pause()}else a.volume=v},60)}
+  if(BGM.syn){const {bus,iv}=BGM.syn;BGM.syn=null;clearInterval(iv);try{bus.gain.setTargetAtTime(0,A.ctx.currentTime,.3)}catch(e){}setTimeout(()=>{try{bus.disconnect()}catch(e){}},2500)}
+}
+
+/* ---------- 플레이어 바 ---------- */
+const ICON_PLAY='<svg viewBox="0 0 20 20"><path d="M5 3 L17 10 L5 17Z" fill="currentColor"/></svg>';
+const ICON_STOP='<svg viewBox="0 0 20 20"><rect x="4" y="4" width="12" height="12" rx="1.5" fill="currentColor"/></svg>';
+function setPlayer(){
+  const on=!!(A.cur&&!A.cur.done), clip=A.cur?A.cur.clip:(typeof A.last==='string'?CLIPS[A.last]:A.last);
+  $('#player').classList.toggle('playing',on);
+  $('#pPlay').innerHTML=on?ICON_STOP:ICON_PLAY; $('#pPlay').setAttribute('aria-label',on?'정지':'다시 듣기');
+  $('#pTitle').textContent=clip?clip.title:'카세트 대기 중';
+  $('#pSub').textContent=clip?(on?(clip.sub||'재생 중'):'▶ 버튼으로 다시 듣기'):'음악이 나오면 여기서 다시 들을 수 있어요';
+}
+$('#pPlay').onclick=()=>{ if(A.cur&&!A.cur.done) stopClip(); else if(A.last && A.last!=='ambient') playClip(A.last); };
+const wave=$('#wave'), wctx=wave.getContext('2d'); let wbuf=null, fakeAmp=0;
+function drawWave(ts){
+  const dpr=window.devicePixelRatio||1, w=wave.clientWidth, h=wave.clientHeight;
+  if(wave.width!==Math.round(w*dpr)||wave.height!==Math.round(h*dpr)){wave.width=Math.round(w*dpr);wave.height=Math.round(h*dpr)}
+  wctx.setTransform(dpr,0,0,dpr,0,0); wctx.clearRect(0,0,w,h);
+  wctx.strokeStyle='#33496a'; wctx.lineWidth=1; wctx.beginPath(); for(let x=0;x<w;x+=12){wctx.moveTo(x,h/2-2);wctx.lineTo(x,h/2+2)} wctx.stroke();
+  const cur=A.cur;
+  if(cur&&!cur.done&&(cur.file||cur.files)&&!A.muted){
+    fakeAmp+=((.35+Math.random()*.5)-fakeAmp)*.08; const t=ts/1000;
+    wctx.strokeStyle='#f0c46e'; wctx.lineWidth=2; wctx.beginPath();
+    for(let x=0;x<=w;x+=2){const y=h/2+Math.sin(x*.09+t*9)*Math.sin(x*.017+t*1.3)*h*.42*fakeAmp; x?wctx.lineTo(x,y):wctx.moveTo(x,y)} wctx.stroke();
+  } else if(A.an&&cur&&cur.bus){ if(!wbuf) wbuf=new Uint8Array(A.an.fftSize); A.an.getByteTimeDomainData(wbuf);
+    wctx.strokeStyle='#f0c46e'; wctx.lineWidth=2; wctx.beginPath();
+    for(let i=0;i<wbuf.length;i++){const x=i/(wbuf.length-1)*w,y=h/2+(wbuf[i]-128)/128*h*1.6; i?wctx.lineTo(x,y):wctx.moveTo(x,y)} wctx.stroke(); }
+  requestAnimationFrame(drawWave);
+}
+requestAnimationFrame(drawWave);
+$('#btnSound').onclick=e=>{A.muted=!A.muted; if(A.out) A.out.gain.value=A.muted?0:1;
+  if(A.cur){if(A.cur.file)A.cur.file.muted=A.muted;if(A.cur.files)Object.values(A.cur.files).forEach(x=>x.muted=A.muted)} if(BGM.el)BGM.el.muted=A.muted;
+  e.currentTarget.setAttribute('aria-pressed',String(!A.muted)); e.currentTarget.textContent=A.muted?'소리 꺼짐':'소리 켜짐'};
+
+/* =========================================================
+   그림: 작곡가 · 인물 스프라이트
+   ========================================================= */
+const ITEMS={
+  guitar:'<g transform="rotate(-28 100 196)"><rect x="96" y="92" width="9" height="90" fill="#d8c39a"/><rect x="92" y="80" width="17" height="16" rx="3" fill="#222"/><path d="M66 180 Q58 160 82 165 Q100 150 118 165 Q142 160 134 180 Q142 216 100 224 Q58 216 66 180Z" fill="#d43434"/><rect x="86" y="188" width="28" height="6" fill="#222"/><circle cx="100" cy="204" r="5" fill="#f2f2f2"/></g>',
+  press:'<g><rect x="132" y="150" width="58" height="76" fill="#7a5530"/><rect x="126" y="142" width="70" height="12" fill="#4a3220"/><rect x="156" y="114" width="10" height="30" fill="#4a3220"/><rect x="140" y="170" width="42" height="32" fill="#f2ead8"/><path d="M145 178h32M145 186h26M145 194h30" stroke="#333" stroke-width="2"/></g>',
+  buds:'<g><circle cx="69" cy="108" r="8" fill="#fafafa" stroke="#999"/><circle cx="131" cy="108" r="8" fill="#fafafa" stroke="#999"/><rect x="66" y="112" width="5" height="16" fill="#fafafa"/><rect x="129" y="112" width="5" height="16" fill="#fafafa"/><path d="M152 44 l12 10 -12 10 V30 l12 10 -12 10" stroke="#3b82f6" stroke-width="3" fill="none"/></g>',
+  plane:'<g transform="translate(18 26)"><path d="M0 22 L60 18 L74 4 L82 6 L72 20 L100 22 L106 14 L110 16 L106 26 L72 28 L82 42 L74 44 L60 30 L0 26Z" fill="#e4ebf2"/></g>',
+  speaker:'<g><rect x="138" y="158" width="46" height="62" rx="10" fill="#2a2d33"/><ellipse cx="161" cy="160" rx="23" ry="6" fill="#3a3f47"/><ellipse cx="161" cy="160" rx="18" ry="4" fill="none" stroke="#38bdf8" stroke-width="3"/></g>'
+};
+const SKIN={hildegard:'#e8c4a0',bach:'#e6b996',beethoven:'#d9a982',chopin:'#efd6c0',cage:'#e3b48f'};
+const BGP={hildegard:'#3a3448',bach:'#3b2f2a',beethoven:'#3b3529',chopin:'#3a2f40',cage:'#24403a'};
+let uid=0;
+function portrait(who,item,label,o={}){
+  const s=SKIN[who]; let back='',front='',coat='#333',neck='',mouth='M90 123 Q100 128 110 123',brow='';
+  switch(who){
+    case 'hildegard': coat='#3d3350';
+      back='<path d="M52 94 Q52 44 100 42 Q148 44 148 94 L162 240 L38 240 Z" fill="#2a2338"/><ellipse cx="100" cy="106" rx="38" ry="46" fill="#f2ede2"/>';
+      front='<path d="M66 82 Q100 60 134 82 L134 74 Q100 52 66 74Z" fill="#f2ede2"/><path d="M98 160 h4 v14 h6 v4 h-6 v20 h-4 v-20 h-6 v-4 h6z" fill="#d9a648"/>';
+      neck='<path d="M68 150 Q100 172 132 150 L136 180 Q100 194 64 180Z" fill="#f2ede2"/>'; break;
+    case 'bach': coat='#5a4330';
+      back='<g fill="#ebe6dc">'+[80,98,116,134,150].map(y=>`<circle cx="64" cy="${y}" r="16"/><circle cx="136" cy="${y}" r="16"/>`).join('')+'<ellipse cx="100" cy="72" rx="44" ry="30"/></g>';
+      front='<path d="M68 80 Q100 52 132 80 Q118 68 100 68 Q82 68 68 80Z" fill="#ebe6dc"/><g fill="#c9a24a"><circle cx="100" cy="196" r="3"/><circle cx="100" cy="212" r="3"/><circle cx="100" cy="228" r="3"/></g>';
+      neck='<path d="M88 150 L112 150 L106 184 L94 184Z" fill="#f4f1ea"/>';
+      mouth='M90 126 Q100 121 110 126'; brow='<path d="M82 92 L95 95 M118 92 L105 95" stroke="#7a6a5a" stroke-width="3" stroke-linecap="round"/>'; break;
+    case 'beethoven': coat='#2f4036';
+      back='<path d="M56 112 L46 86 L62 88 L54 62 L72 70 L72 44 L88 58 L98 36 L106 56 L122 40 L124 64 L144 54 L136 78 L156 80 L142 98 L154 116 L136 112Z" fill="#2b2622"/>';
+      front='<path d="M70 86 L80 70 L88 80 L98 64 L104 80 L116 66 L122 82 L132 74 L130 92 Q100 76 70 92Z" fill="#2b2622"/>';
+      neck='<path d="M82 148 Q100 162 118 148 L122 170 Q100 180 78 170Z" fill="#a33b32"/>';
+      mouth='M90 127 Q100 120 110 127'; brow='<path d="M80 90 L96 97 M120 90 L104 97" stroke="#2b2622" stroke-width="4" stroke-linecap="round"/>'; break;
+    case 'chopin': coat='#202128';
+      back='<path d="M64 98 Q58 54 100 52 Q142 54 136 98 L132 122 L128 92 L72 92 L68 122Z" fill="#6b4a2e"/>';
+      front='<path d="M66 92 Q72 58 104 56 Q134 58 136 88 Q116 70 96 74 Q80 78 66 92Z" fill="#7a5636"/>';
+      neck='<path d="M82 146 L118 146 L114 164 L86 164Z" fill="#f4f1ea"/><path d="M88 165 L100 158 L112 165 L100 173Z" fill="#111"/>';
+      mouth='M92 126 Q100 123 108 126'; brow='<path d="M82 94 Q89 90 96 94 M104 94 Q111 90 118 94" stroke="#5a3d25" stroke-width="2.5" fill="none"/>'; break;
+    case 'cage': coat='#46637f';
+      back='<path d="M64 100 Q62 58 100 56 Q138 58 136 100 L132 86 Q100 72 68 86Z" fill="#8a7a68"/>';
+      neck='<path d="M86 148 L100 168 L114 148 L122 158 L100 186 L78 158Z" fill="#f4f1ea"/>';
+      mouth='M86 120 Q100 138 114 120 Q100 127 86 120Z'; brow='<path d="M82 94 Q89 90 96 94 M104 94 Q111 90 118 94" stroke="#6a5a48" stroke-width="2.5" fill="none"/>'; break;
+  }
+  let mfill=who==='cage'?'#7a3b2e':'none';
+  if(o.mood==='happy'){mouth=who==='cage'?mouth:'M88 122 Q100 134 112 122';}
+  if(o.mood==='sad'){mouth='M90 129 Q100 121 110 129';mfill='none';}
+  const id='p'+(uid++);
+  return `<svg viewBox="0 0 200 240" role="img" aria-label="${esc(label||'')}"><defs><clipPath id="c${id}"><rect width="200" height="240"/></clipPath><radialGradient id="g${id}" cx="50%" cy="35%" r="70%"><stop offset="0" stop-color="${BGP[who]}" stop-opacity=".6"/><stop offset="1" stop-color="#0f1824"/></radialGradient></defs>
+  <g clip-path="url(#c${id})">${o.bare?'':`<rect width="200" height="240" fill="url(#g${id})"/>`}${back}
+  <path d="M22 240 Q24 176 100 164 Q176 176 178 240Z" fill="${coat}"/><rect x="88" y="132" width="24" height="26" fill="${s}"/>${neck}
+  <ellipse cx="100" cy="106" rx="30" ry="37" fill="${s}"/>${front}
+  <ellipse cx="88" cy="104" rx="3" ry="3.5" fill="#2a2219"/><ellipse cx="112" cy="104" rx="3" ry="3.5" fill="#2a2219"/>${brow}
+  ${o.mood==='happy'?'<ellipse cx="82" cy="118" rx="6" ry="3" fill="#e08a7a" opacity=".35"/><ellipse cx="118" cy="118" rx="6" ry="3" fill="#e08a7a" opacity=".35"/>':''}
+  <path d="M100 106 Q96 116 101 118" stroke="#0000003a" stroke-width="2" fill="none"/>
+  <path d="${mouth}" stroke="#7a3b2e" stroke-width="2.4" fill="${mfill}" stroke-linecap="round"/>
+  ${item?ITEMS[item]:''}</g></svg>`;
+}
+/* 애니메이션풍 얼굴 (윤서, 하모) */
+function face(e,iris,browC,skinShade){
+  const L=128,R=172,Y=176; let eyes='',brows='',mouth='',blush='';
+  if(e==='smile'){
+    eyes=`<path d="M${L-12} ${Y+3} Q${L} ${Y-10} ${L+12} ${Y+3}" stroke="#2a1d18" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M${R-12} ${Y+3} Q${R} ${Y-10} ${R+12} ${Y+3}" stroke="#2a1d18" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    mouth='<path d="M136 210 Q150 228 164 210 Q150 216 136 210Z" fill="#b5524a"/>';
+  } else {
+    const ry=e==='shock'?16:14, ir=e==='shock'?6:8.5;
+    eyes=[L,R].map(x=>`<ellipse cx="${x}" cy="${Y}" rx="11.5" ry="${ry}" fill="#fff"/><ellipse cx="${x}" cy="${Y+2}" rx="${ir}" ry="${ir+3}" fill="${iris}"/><ellipse cx="${x}" cy="${Y+3}" rx="${ir*.45}" ry="${ir*.6}" fill="#1a1210"/><circle cx="${x-3}" cy="${Y-3}" r="3.2" fill="#fff"/><path d="M${x-13} ${Y-ry+4} Q${x} ${Y-ry-4} ${x+13} ${Y-ry+4}" stroke="#2a1d18" stroke-width="3.5" fill="none" stroke-linecap="round"/>`).join('');
+    mouth=e==='shock'?'<ellipse cx="150" cy="214" rx="7" ry="9" fill="#8a3a34"/>':e==='sad'?'<path d="M140 216 Q150 209 160 216" stroke="#8a3a34" stroke-width="3" fill="none" stroke-linecap="round"/>':e==='serious'?'<path d="M141 213 L159 213" stroke="#8a3a34" stroke-width="3" stroke-linecap="round"/>':'<path d="M139 211 Q150 219 161 211" stroke="#8a3a34" stroke-width="3" fill="none" stroke-linecap="round"/>';
+  }
+  const bY=e==='shock'?146:154;
+  brows=e==='sad'?`<path d="M114 ${bY+2} L140 ${bY-6}" /><path d="M160 ${bY-6} L186 ${bY+2}" />`:e==='serious'?`<path d="M114 ${bY-4} L140 ${bY+2}" /><path d="M160 ${bY+2} L186 ${bY-4}" />`:`<path d="M114 ${bY} Q127 ${bY-7} 140 ${bY-1}" /><path d="M160 ${bY-1} Q173 ${bY-7} 186 ${bY}" />`;
+  brows=`<g stroke="${browC}" stroke-width="4" fill="none" stroke-linecap="round">${brows}</g>`;
+  if(e==='smile'||e==='shock'||e==='normal') blush=`<ellipse cx="116" cy="198" rx="11" ry="5" fill="#ef8a8a" opacity="${e==='normal'?.18:.35}"/><ellipse cx="184" cy="198" rx="11" ry="5" fill="#ef8a8a" opacity="${e==='normal'?.18:.35}"/>`;
+  return eyes+brows+blush+'<path d="M150 186 Q147 196 151 198" stroke="'+skinShade+'" stroke-width="2.5" fill="none"/>'+mouth;
+}
+function spriteYun(e){
+  return `<svg viewBox="0 0 300 560" aria-hidden="true">
+  <path d="M82 160 Q76 74 150 68 Q224 74 218 160 L232 380 Q150 400 68 380Z" fill="#3b2a24"/>
+  <path d="M66 560 L82 336 Q150 304 218 336 L234 560Z" fill="#283a5c"/>
+  <path d="M124 302 L150 372 L176 302Z" fill="#f6f4ef"/>
+  <path d="M100 330 L138 302 L150 372Z" fill="#1f2f4c"/><path d="M200 330 L162 302 L150 372Z" fill="#1f2f4c"/>
+  <path d="M139 322 L150 356 L161 322 L150 330Z" fill="#c23b3b"/><rect x="190" y="400" width="26" height="6" rx="2" fill="#d9a648"/>
+  <rect x="136" y="244" width="28" height="64" fill="#efc9b1"/>
+  <ellipse cx="150" cy="178" rx="60" ry="70" fill="#f6d8c2"/>
+  ${face(e,'#5a3526','#3b2a24','#d9a48a')}
+  <path d="M90 166 Q92 98 150 94 Q210 98 212 166 Q200 128 178 122 Q172 146 150 138 Q134 120 118 134 Q104 128 90 166Z" fill="#3b2a24"/>
+  <path d="M90 160 Q82 236 98 276 L108 268 Q96 222 100 168Z" fill="#3b2a24"/><path d="M210 160 Q218 236 202 276 L192 268 Q204 222 200 168Z" fill="#3b2a24"/>
+  <rect x="180" y="116" width="20" height="7" rx="3" fill="#e8c35c" transform="rotate(-20 190 119)"/>
+  <path d="M118 250 Q104 300 136 334 M182 250 Q196 300 164 334" stroke="#f4f4f4" stroke-width="2.5" fill="none"/>
+  </svg>`;
+}
+function spriteHarmo(e){
+  const k='h'+(uid++);
+  return `<svg viewBox="0 0 300 560" aria-hidden="true"><defs>
+  <radialGradient id="a${k}"><stop offset="0" stop-color="#86d8d3" stop-opacity=".5"/><stop offset="1" stop-color="#86d8d3" stop-opacity="0"/></radialGradient>
+  <linearGradient id="f${k}" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  <mask id="m${k}"><rect width="300" height="560" fill="url(#f${k})"/></mask></defs>
+  <ellipse cx="150" cy="270" rx="150" ry="270" fill="url(#a${k})"/>
+  <g mask="url(#m${k})">
+  <path d="M78 178 Q74 88 150 82 Q226 88 222 178 L228 262 Q190 246 150 250 Q110 246 72 262Z" fill="#d9d4f2"/>
+  <path d="M76 560 L90 330 Q150 304 210 330 L224 560Z" fill="#f2e8d3"/>
+  ${['#e8c35c','#d55b4c','#5f92e3','#de86ad','#86d8d3'].map((c,i)=>`<rect x="${92+i*23.2}" y="388" width="23.2" height="16" fill="${c}"/>`).join('')}
+  <path d="M118 312 L150 344 L182 312" stroke="#d9a648" stroke-width="6" fill="none"/>
+  <rect x="136" y="244" width="28" height="70" fill="#f6dccb"/>
+  <ellipse cx="150" cy="178" rx="60" ry="70" fill="#fbe3d3"/>
+  ${face(e,'#d98f2b','#9b93c9','#e0b49e')}
+  <path d="M88 172 Q90 102 150 98 Q210 102 212 172 Q192 136 168 138 L160 118 L148 142 Q124 128 108 144Z" fill="#e8e3fb"/>
+  <path d="M76 176 Q78 76 150 72 Q222 76 224 176" stroke="#d9a648" stroke-width="10" fill="none"/>
+  <rect x="60" y="160" width="30" height="60" rx="13" fill="#d9a648"/><rect x="210" y="160" width="30" height="60" rx="13" fill="#d9a648"/>
+  <g transform="translate(176 108) rotate(12)"><rect width="36" height="23" rx="3" fill="#22344b"/><circle cx="11" cy="11.5" r="5" fill="#f2e8d3"/><circle cx="25" cy="11.5" r="5" fill="#f2e8d3"/></g>
+  </g>
+  <g fill="#e9fffd"><path d="M40 120 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4z"/><path d="M256 220 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z"/><path d="M60 330 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z"/></g>
+  </svg>`;
+}
+function gem(color,filled,size){
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true"><polygon points="50,4 90,32 76,94 24,94 10,32" fill="${filled?color:'none'}" stroke="${filled?'#ffffffaa':'#3a5070'}" stroke-width="5" stroke-linejoin="round"/>${filled?'<polygon points="50,4 66,32 50,94 34,32" fill="#ffffff40"/><polyline points="10,32 90,32" stroke="#ffffff80" stroke-width="3"/><polygon points="50,4 34,32 10,32" fill="#ffffff22"/>':''}</svg>`;
+}
+
+/* =========================================================
+   배경 그림 (1600×900)
+   ========================================================= */
+const sv=(inner,defs='')=>`<svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>${defs}</defs>${inner}</svg>`;
+const glowDef=(id,c)=>`<radialGradient id="${id}"><stop offset="0" stop-color="${c}" stop-opacity=".65"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>`;
+const candle=(x,y,s=1)=>`<g transform="translate(${x} ${y}) scale(${s})"><circle cx="0" cy="-70" r="130" fill="url(#cg)"/><rect x="-6" y="0" width="12" height="160" fill="#8a6a2a"/><rect x="-30" y="150" width="60" height="10" fill="#8a6a2a"/><rect x="-11" y="-60" width="22" height="64" fill="#efe6cf"/><ellipse cx="0" cy="-74" rx="8" ry="16" fill="#ffd27a"/><ellipse cx="0" cy="-70" rx="3" ry="7" fill="#fff6dc"/></g>`;
+const BG={
+room:()=>sv(`<rect width="1600" height="900" fill="#ecdfcc"/><rect y="720" width="1600" height="180" fill="#b89a7a"/>
+  <rect x="860" y="110" width="560" height="440" fill="url(#sky)"/><circle cx="1230" cy="470" r="64" fill="#fff3d6"/>
+  <path d="M860 470 Q1000 420 1140 460 Q1280 430 1420 470 V550 H860Z" fill="#a9b9c9"/>
+  <rect x="860" y="110" width="560" height="440" fill="none" stroke="#fff" stroke-width="18"/><path d="M1140 110V550M860 330H1420" stroke="#fff" stroke-width="12"/>
+  <path d="M820 80 Q860 300 830 600 L880 600 Q900 300 880 80Z" fill="#8fb3c9"/><path d="M1460 80 Q1420 300 1450 600 L1400 600 Q1380 300 1400 80Z" fill="#8fb3c9"/>
+  <polygon points="860,550 1420,550 1500,900 700,900" fill="#fff6e0" opacity=".25"/>
+  <rect x="190" y="140" width="230" height="310" fill="url(#poster)"/><circle cx="305" cy="270" r="70" fill="#fff" opacity=".3"/><text x="305" y="410" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="44" fill="#fff">LIVE</text><text x="305" y="432" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" fill="#fff">2026 WORLD TOUR</text>
+  <rect x="-40" y="610" width="620" height="300" rx="30" fill="#f4f1ec"/><path d="M-40 680 Q200 640 580 690 V900 H-40Z" fill="#a7c4e2"/>
+  <rect x="1060" y="640" width="560" height="26" fill="#8a6a4a"/><rect x="1090" y="666" width="18" height="234" fill="#6a4e36"/>
+  <rect x="1300" y="618" width="90" height="22" rx="4" fill="#20262e"/><rect x="1306" y="621" width="78" height="16" rx="2" fill="#7fd7ff" opacity=".7"/>
+  <path d="M1480 640 L1500 540 L1540 540 L1560 640Z" fill="#e8c35c"/><rect x="1514" y="500" width="10" height="40" fill="#555"/>`,
+  `<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc8ea"/><stop offset=".6" stop-color="#ffe2b8"/><stop offset="1" stop-color="#ffb98a"/></linearGradient><linearGradient id="poster" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#de86ad"/><stop offset="1" stop-color="#5f4bb6"/></linearGradient>`),
+classroom:()=>sv(`<rect width="1600" height="900" fill="#efe6d6"/><rect width="1600" height="40" fill="#d8ccb6"/><rect y="640" width="1600" height="260" fill="#c7a982"/>
+  <rect x="340" y="140" width="920" height="350" fill="#8a6a4a"/><rect x="356" y="156" width="888" height="318" fill="#2f4a3a"/>
+  <text x="800" y="260" text-anchor="middle" font-family="Gowun Dodum,sans-serif" font-size="46" fill="#e9efe6" opacity=".85">오늘의 음악 수업 — 리코더 실기</text>
+  <text x="800" y="340" text-anchor="middle" font-family="Gowun Dodum,sans-serif" font-size="34" fill="#e9efe6" opacity=".6">♪ 서양음악사: 중세 → 바로크 → 고전 → 낭만 → 현대</text>
+  <rect x="420" y="474" width="760" height="12" fill="#b49a7a"/>
+  <circle cx="1380" cy="110" r="44" fill="#fff" stroke="#555" stroke-width="6"/><path d="M1380 110V82M1380 110H1402" stroke="#333" stroke-width="5"/>
+  <rect x="40" y="70" width="110" height="70" rx="8" fill="#ddd2bf"/><g fill="#9a8e7a">${Array.from({length:12},(_,i)=>`<circle cx="${58+(i%6)*16}" cy="${92+Math.floor(i/6)*22}" r="4"/>`).join('')}</g>
+  ${[0,1,2].map(i=>`<rect x="${1330+i*0}" y="${200+i*0}" width="0" height="0"/>`).join('')}
+  <rect x="1320" y="180" width="250" height="380" fill="#bfe0f5"/><path d="M1320 370H1570M1445 180V560" stroke="#fff" stroke-width="12"/><rect x="1320" y="180" width="250" height="380" fill="none" stroke="#fff" stroke-width="14"/>
+  ${[[180,700,1],[560,700,1],[940,700,1],[1320,700,1],[40,800,1.25],[480,800,1.25],[920,800,1.25],[1360,800,1.25]].map(([x,y,s])=>`<g transform="translate(${x} ${y}) scale(${s})"><rect width="240" height="22" fill="#b08458"/><rect x="20" y="22" width="12" height="120" fill="#777"/><rect x="208" y="22" width="12" height="120" fill="#777"/></g>`).join('')}`),
+hallway:()=>sv(`<rect width="1600" height="900" fill="#d8cbb8"/>
+  <polygon points="0,900 1600,900 980,540 620,540" fill="#a8846a"/><polygon points="0,0 1600,0 980,300 620,300" fill="#e2d6c2"/>
+  <polygon points="0,0 620,300 620,540 0,900" fill="#ead9c0"/><polygon points="1600,0 980,300 980,540 1600,900" fill="#d6c1a5"/>
+  <rect x="680" y="320" width="240" height="220" fill="#4a3424"/><rect x="700" y="340" width="200" height="200" fill="url(#door)"/><rect x="730" y="290" width="140" height="34" rx="4" fill="#2f4a3a"/><text x="800" y="315" text-anchor="middle" font-family="Gowun Dodum,sans-serif" font-size="22" fill="#fff">음악실</text>
+  ${[[60,140,300,420],[250,240,420,470]].map(([x1,y1,x2,y2])=>`<polygon points="${x1},${y1} ${x2},${y1+80} ${x2},${y2} ${x1},${y2+150}" fill="url(#dusk)"/>`).join('')}
+  <polygon points="80,900 480,900 560,600 320,600" fill="#ffb15e" opacity=".22"/><polygon points="420,900 640,900 660,640 520,640" fill="#ffb15e" opacity=".16"/>
+  ${[0,1,2].map(i=>`<rect x="${780-i*0}" y="${40+i*90}" width="${40+i*0}" height="0"/>`).join('')}
+  <polygon points="700,60 900,60 880,90 720,90" fill="#fffbe8" opacity=".7"/><polygon points="740,190 860,190 850,208 750,208" fill="#fffbe8" opacity=".6"/>
+  ${[1100,1230,1360].map((x,i)=>`<polygon points="${x},${360-i*60} ${x+90},${330-i*70} ${x+90},${640+i*50} ${x},${600+i*40}" fill="#8aa0b0" stroke="#6d808e" stroke-width="4"/>`).join('')}`,
+  `<linearGradient id="dusk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffcf8a"/><stop offset="1" stop-color="#f08a4a"/></linearGradient><radialGradient id="door"><stop offset="0" stop-color="#ffd58a"/><stop offset="1" stop-color="#c46a2a"/></radialGradient>`),
+musicroom:()=>sv(`<rect width="1600" height="900" fill="#d9c7a6"/><rect y="520" width="1600" height="380" fill="#6b4a33"/><path d="M0 520H1600" stroke="#4a3222" stroke-width="10"/>
+  ${Array.from({length:8},(_,i)=>`<rect x="${20+i*200}" y="560" width="170" height="260" fill="none" stroke="#4a3222" stroke-width="5"/>`).join('')}
+  <rect x="60" y="120" width="240" height="320" fill="url(#ev)"/><rect x="60" y="120" width="240" height="320" fill="none" stroke="#5a3e26" stroke-width="14"/><path d="M180 120V440" stroke="#5a3e26" stroke-width="8"/>
+  <g class="portraits">${[0,1,2,3,4].map(i=>{const x=420+i*200;return `<g><ellipse cx="${x}" cy="210" rx="70" ry="88" fill="#3a2a1e" stroke="#c9a24a" stroke-width="10"/><ellipse cx="${x}" cy="190" rx="26" ry="32" fill="#8a7460"/><path d="M${x-52} 290 Q${x} 230 ${x+52} 290Z" fill="#5a4636"/><rect x="${x-40}" y="306" width="80" height="18" rx="3" fill="#c9a24a"/></g>`}).join('')}</g>
+  <rect x="1180" y="360" width="380" height="330" fill="#2a1a12"/><rect x="1180" y="560" width="380" height="40" fill="#f2efe6"/>${Array.from({length:14},(_,i)=>`<rect x="${1196+i*26}" y="560" width="12" height="24" fill="#111"/>`).join('')}<rect x="1180" y="690" width="24" height="120" fill="#2a1a12"/><rect x="1536" y="690" width="24" height="120" fill="#2a1a12"/>
+  <circle cx="1330" cy="320" r="150" fill="url(#cy)" class="glowbox"/>
+  <rect x="1250" y="290" width="160" height="72" rx="8" fill="#9aa6b2"/><rect x="1272" y="304" width="116" height="36" rx="18" fill="#152233"/><circle cx="1300" cy="322" r="12" fill="#f2e8d3"/><circle cx="1360" cy="322" r="12" fill="#f2e8d3"/><circle cx="1396" cy="350" r="5" fill="#ff5a4a" class="glowbox"/>
+  <g stroke="#2a2a2a" stroke-width="8" fill="none"><path d="M760 900V700M720 700H800"/><path d="M940 900V720M900 720H980"/></g><rect x="712" y="660" width="96" height="50" fill="#f2efe6" transform="rotate(-6 760 685)"/>`,
+  `<linearGradient id="ev" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a5a9a"/><stop offset="1" stop-color="#f08a4a"/></linearGradient>${glowDef('cy','#86d8d3')}`),
+med:()=>sv(`<rect width="1600" height="900" fill="url(#stone)"/>
+  ${[[140,460],[1160,460]].map(([x,w])=>`<path d="M${x} 900V420A150 150 0 0 1 ${x+300} 420V900Z" fill="#14110d"/><path d="M${x} 900V420A150 150 0 0 1 ${x+300} 420" fill="none" stroke="#5a5044" stroke-width="22"/>`).join('')}
+  <path d="M540 900V440A260 260 0 0 1 1060 440V900Z" fill="#1a1611"/><path d="M540 900V440A260 260 0 0 1 1060 440" fill="none" stroke="#5a5044" stroke-width="26"/>
+  <circle cx="800" cy="360" r="210" fill="url(#rg)"/>
+  <g transform="translate(800 360)">${Array.from({length:12},(_,i)=>{const a=i*30*Math.PI/180,b=(i+1)*30*Math.PI/180,r=150;return `<path d="M0 0 L${(r*Math.cos(a)).toFixed(1)} ${(r*Math.sin(a)).toFixed(1)} A${r} ${r} 0 0 1 ${(r*Math.cos(b)).toFixed(1)} ${(r*Math.sin(b)).toFixed(1)}Z" fill="${['#8a2030','#244a8a','#c99a2e','#2f6b4a'][i%4]}" stroke="#1a1410" stroke-width="7"/>`}).join('')}<circle r="150" fill="none" stroke="#1a1410" stroke-width="14"/><circle r="46" fill="#e8c35c" stroke="#1a1410" stroke-width="8"/><circle r="100" fill="none" stroke="#1a1410" stroke-width="6"/></g>
+  <polygon points="690,470 910,470 1180,900 420,900" fill="#ffd27a" opacity=".1"/>
+  <rect y="800" width="1600" height="100" fill="#1c1813"/>${candle(330,640)}${candle(1270,640)}
+  <g transform="translate(1340 650)"><rect x="40" y="70" width="18" height="180" fill="#4a3220"/><polygon points="-40,70 140,40 150,70 -30,100" fill="#5a3e26"/><polygon points="-20,62 48,50 52,74 -16,86" fill="#f2e8d3"/><polygon points="52,50 128,38 132,60 56,74" fill="#efe2c4"/><path d="M-10 66 l50 -9 M-8 74 l50 -9 M62 58 l60 -10 M64 66 l60 -10" stroke="#9b2d22" stroke-width="2"/></g>`,
+  `<pattern id="stone" width="160" height="80" patternUnits="userSpaceOnUse"><rect width="160" height="80" fill="#3a342c"/><path d="M0 1H160M0 41H160M80 1V41M1 41V80M159 41V80" stroke="#241f1a" stroke-width="4"/></pattern>${glowDef('rg','#ffd27a')}${glowDef('cg','#ffcf73')}`),
+bar:()=>sv(`<rect width="1600" height="900" fill="url(#brick)"/><rect y="780" width="1600" height="120" fill="#26272b"/>
+  <rect x="1060" y="120" width="230" height="170" fill="#0e1424"/><circle cx="1220" cy="170" r="34" fill="#e6ecf5"/><g fill="#1a1b1f">${[0,1,2,3].map(i=>`<rect x="${1086+i*52}" y="120" width="12" height="170"/>`).join('')}</g><rect x="1060" y="120" width="230" height="170" fill="none" stroke="#3a3c42" stroke-width="16"/>
+  <polygon points="1060,290 1290,290 1100,900 620,900" fill="#cfe0ff" opacity=".08"/>
+  <rect x="40" y="160" width="340" height="740" fill="#1d1e22"/><g fill="#2c2e33">${Array.from({length:6},(_,i)=>`<rect x="${70+i*52}" y="180" width="16" height="720"/>`).join('')}</g><rect x="40" y="420" width="340" height="22" fill="#2c2e33"/><circle cx="350" cy="560" r="14" fill="#4a4d55"/>
+  <rect x="1150" y="680" width="380" height="24" fill="#4a3424"/><rect x="1170" y="704" width="18" height="160" fill="#3a281a"/><rect x="1494" y="704" width="18" height="160" fill="#3a281a"/>
+  ${candle(1460,560,.8)}
+  ${[[1190,640,-8],[1270,650,6],[1350,646,-3]].map(([x,y,r])=>`<g transform="translate(${x} ${y}) rotate(${r})"><rect width="90" height="56" fill="#efe6cf"/>${[10,16,22,28,34].map(yy=>`<path d="M6 ${yy}H84" stroke="#555" stroke-width="1.2"/>`).join('')}<circle cx="30" cy="22" r="3" fill="#222"/><circle cx="46" cy="16" r="3" fill="#222"/><circle cx="62" cy="28" r="3" fill="#222"/></g>`).join('')}
+  <rect x="460" y="740" width="200" height="40" fill="#5a4630"/><rect x="480" y="780" width="16" height="90" fill="#3a2a1a"/><rect x="624" y="780" width="16" height="90" fill="#3a2a1a"/>`,
+  `<pattern id="brick" width="140" height="70" patternUnits="userSpaceOnUse"><rect width="140" height="70" fill="#4a4d55"/><path d="M0 1H140M0 36H140M70 1V36M1 36V70M139 36V70" stroke="#2c2e33" stroke-width="5"/></pattern>${glowDef('cg','#ffcf73')}`),
+cla:()=>sv(`<rect width="1600" height="900" fill="url(#wp)"/><rect y="620" width="1600" height="280" fill="#6e5236"/>${Array.from({length:8},(_,i)=>`<rect x="${20+i*200}" y="650" width="170" height="200" fill="none" stroke="#4e3824" stroke-width="5"/>`).join('')}
+  <rect x="960" y="110" width="440" height="440" fill="url(#au)"/><path d="M960 430 Q1100 360 1240 410 Q1330 380 1400 400 V550 H960Z" fill="#8a6a3a"/>
+  ${[[1010,420,46,'#c2571f'],[1080,400,38,'#e08a2c'],[1300,410,52,'#9a3b1a'],[1360,430,30,'#e0a13a'],[1180,440,26,'#c2571f']].map(([x,y,r,c])=>`<rect x="${x-4}" y="${y}" width="8" height="${r*1.4}" fill="#4a3220"/><circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`).join('')}
+  <rect x="960" y="110" width="440" height="440" fill="none" stroke="#5a3e26" stroke-width="20"/><path d="M1180 110V550M960 330H1400" stroke="#5a3e26" stroke-width="12"/>
+  <path d="M920 80 Q960 320 930 600 L990 600 Q1000 320 980 80Z" fill="#4f6a4a"/><path d="M1440 80 Q1400 320 1430 600 L1370 600 Q1360 320 1380 80Z" fill="#4f6a4a"/>
+  <polygon points="960,550 1400,550 1300,900 520,900" fill="#ffc77a" opacity=".14"/>
+  <rect x="40" y="540" width="560" height="120" fill="#7a4a26"/><rect x="40" y="530" width="560" height="14" fill="#5a3418"/><rect x="70" y="574" width="500" height="36" fill="#f2efe6"/>${Array.from({length:22},(_,i)=>`<rect x="${82+i*22}" y="574" width="10" height="22" fill="#1a1410"/>`).join('')}<rect x="70" y="660" width="16" height="200" fill="#5a3418"/><rect x="554" y="660" width="16" height="200" fill="#5a3418"/>
+  <rect x="220" y="440" width="150" height="96" fill="#efe6cf" transform="rotate(-4 295 488)"/>${[456,468,480,492,504].map(y=>`<path d="M232 ${y}H358" stroke="#666" stroke-width="1.4" transform="rotate(-4 295 488)"/>`).join('')}
+  <rect x="1150" y="700" width="460" height="24" fill="#5a3a22"/><rect x="1200" y="660" width="120" height="44" fill="#f4ecd9" transform="rotate(5 1260 680)"/><path d="M1350 700 Q1380 600 1440 560" stroke="#f4f1ea" stroke-width="5" fill="none"/><rect x="1330" y="676" width="34" height="26" rx="4" fill="#1a1a2a"/>`,
+  `<pattern id="wp" width="70" height="70" patternUnits="userSpaceOnUse"><rect width="70" height="70" fill="#d6caa6"/><rect width="34" height="70" fill="#cbbd96"/><circle cx="17" cy="35" r="5" fill="#b8a983"/></pattern><linearGradient id="au" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4a95e"/><stop offset="1" stop-color="#fbe0a8"/></linearGradient>`),
+rom:()=>sv(`<rect width="1600" height="900" fill="#3a2440"/>${[[40,90,380,420],[1180,90,380,420],[40,560,380,260],[1180,560,380,260]].map(([x,y,w,h])=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#b08a4a" stroke-width="4" opacity=".45"/>`).join('')}
+  <rect x="560" y="70" width="480" height="580" fill="url(#ns)"/>
+  <path d="M560 650 V470 L620 470 V420 L700 420 V500 L760 500 V380 L840 380 V450 L900 450 V400 L980 400 V480 L1040 480 V650Z" fill="#141a2c"/>
+  ${[[640,440],[720,520],[780,410],[800,460],[860,470],[920,430],[1000,500],[680,560],[950,560]].map(([x,y])=>`<rect x="${x}" y="${y}" width="14" height="18" fill="#f3c46a" opacity=".85"/>`).join('')}
+  <rect x="560" y="70" width="480" height="580" fill="url(#rainp)"/>
+  <rect x="560" y="70" width="480" height="580" fill="none" stroke="#2a1a22" stroke-width="20"/><path d="M800 70V650M560 360H1040" stroke="#2a1a22" stroke-width="12"/>
+  <path d="M500 40 Q600 300 520 700 L470 700 Q470 300 440 40Z" fill="#7a1f2e"/><path d="M1100 40 Q1000 300 1080 700 L1130 700 Q1130 300 1160 40Z" fill="#7a1f2e"/><rect x="430" y="30" width="740" height="30" fill="#5a1420"/>
+  <rect y="760" width="1600" height="140" fill="#2a1a14"/>
+  <path d="M60 880 L60 640 Q60 600 120 600 L420 600 Q520 600 560 660 Q600 720 700 730 L700 880Z" fill="#0f0b10"/><path d="M80 600 L380 420 L400 440 L120 600Z" fill="#17111a"/>
+  ${candle(420,560,.7)}
+  <rect x="1300" y="180" width="160" height="200" fill="#5a3e26"/><rect x="1316" y="196" width="128" height="168" fill="#c9a98a"/><ellipse cx="1380" cy="270" rx="34" ry="44" fill="#6a5a4a"/>`,
+  `<linearGradient id="ns" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151b33"/><stop offset="1" stop-color="#3a4a7a"/></linearGradient><pattern id="rainp" width="40" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(12)"><path d="M10 0V30" stroke="#cfe0ff" stroke-width="2" opacity=".35"/><path d="M30 40V66" stroke="#cfe0ff" stroke-width="1.5" opacity=".25"/></pattern>${glowDef('cg','#ffcf73')}`),
+mod:()=>sv(`<rect width="1600" height="900" fill="url(#plank)"/>
+  ${[[100,140],[1100,140]].map(([x,y])=>`<rect x="${x}" y="${y}" width="400" height="380" fill="#cfe3d6"/>${[0,1,2,3,4].map(i=>`<polygon points="${x+20+i*80},${y+380} ${x+60+i*80},${y+120+(i%2)*60} ${x+100+i*80},${y+380}" fill="${i%2?'#2f5a3a':'#3f6e48'}"/>`).join('')}<rect x="${x}" y="${y}" width="400" height="380" fill="none" stroke="#4a3220" stroke-width="18"/><path d="M${x+200} ${y}V${y+380}M${x} ${y+190}H${x+400}" stroke="#4a3220" stroke-width="10"/>`).join('')}
+  <path d="M0 60 L800 -40 L1600 60" stroke="#3a2614" stroke-width="40" fill="none"/><path d="M200 110 L800 20 L1400 110" stroke="#3a2614" stroke-width="22" fill="none"/><rect x="0" y="100" width="1600" height="18" fill="#3a2614"/>
+  <rect y="660" width="1600" height="240" fill="#5a3e26"/><rect y="660" width="1600" height="14" fill="#7a5636"/>
+  <path d="M160 660 L160 520 Q160 490 210 490 L520 490 Q600 490 640 560 Q660 600 700 610 L700 660Z" fill="#0d0d0d"/><rect x="180" y="660" width="16" height="80" fill="#0d0d0d"/><rect x="640" y="660" width="16" height="80" fill="#0d0d0d"/><rect x="740" y="610" width="70" height="20" rx="4" fill="#0d0d0d"/>
+  ${[0,1,2,3,4,5].map(i=>`<rect x="${i*280-40}" y="830" width="240" height="70" rx="8" fill="#2a1d12"/>`).join('')}
+  <g transform="translate(1440 560)"><circle r="34" fill="#e8e4d8" stroke="#555" stroke-width="6"/><path d="M0 0V-24M0 0L14 8" stroke="#222" stroke-width="4"/><rect x="-6" y="-48" width="12" height="12" fill="#555"/></g>`,
+  `<pattern id="plank" width="80" height="900" patternUnits="userSpaceOnUse"><rect width="40" height="900" fill="#8a6440"/><rect x="40" width="40" height="900" fill="#7a5636"/><path d="M40 0V900M0 0V900" stroke="#4a3220" stroke-width="3"/></pattern>`)
+};
+const ERA_BG=['med','bar','cla','rom','mod'];
+
+/* =========================================================
+   시대 · 대본
+   ========================================================= */
+const ERAS=[
+{key:'med',name:'중세',en:'Medieval',year:'1150년경',place:'독일 빙겐, 루페르츠베르크 수녀원',stampLat:'Anno Domini MCL',theme:'단선율과 악보의 탄생',who:'hildegard',cname:'힐데가르트 폰 빙엔',short:'힐데가르트',lat:'Hildegard',corig:'Hildegard von Bingen',life:'1098–1179',crystal:'황금 네우마 크리스탈',game:'neume',res0:20,script:[
+ {t:'n',x:'카세트가 철컥, 하고 돌아갔다. 눈을 떠 보니 차가운 돌벽과 흔들리는 촛불. 어디선가 여러 사람이 한 목소리로 노래하는 소리가 들린다.'},
+ {t:'clip',c:'chant'},
+ {t:'s',x:'처음 보는 옷차림이군요, 젊은 순례자여. 저는 이 수녀원의 원장 힐데가르트입니다.'},
+ {t:'s',x:'하느님께서 보여 주신 환시를 노래로 지어 수녀들에게 가르치고 있어요. 그런데 입에서 입으로만 전하다 보니, 부를 때마다 선율이 조금씩 달라집니다. 제가 세상을 떠나면 이 노래들도 함께 사라지겠지요.'},
+ {t:'c',p:'힐데가르트에게 뭐라고 말할까?',o:[
+  {x:'노래를 기록으로 남기면 어때요? 소리가 올라가고 내려가는 모양을 그림처럼 적는 거예요.',r:25,re:'그림처럼… 네우마 말이군요! 가사 위에 작은 기호를 얹어 선율이 오르내리는 모양을 표시하는 방법이지요.'},
+  {x:'수녀님들께 더 열심히 외우라고 하세요.',r:-10,re:'노래가 수십 곡이 넘는답니다. 기억만으로는 한계가 있어요.'},
+  {x:'인쇄기로 악보를 천 장쯤 찍어서 나눠 주세요!',g:'press'}]},
+ {t:'clue',id:'m-clue',clip:'chant',q:'수녀들이 부르는 성가를 다시 들어 보세요. 이 음악의 특징은 무엇일까요?',o:[
+  {x:'모두가 하나의 선율을 함께 부른다',ok:1},{x:'여러 성부가 서로 다른 선율을 동시에 부른다'},{x:'드럼과 기타 반주가 박자를 이끈다'}],
+  ex:'중세 성가는 반주 없이 하나의 선율을 함께 부르는 <b>단선율(모노포니)</b> 음악이에요. 라틴어 가사로 예배 때 불렀어요.'},
+ {t:'s',x:'그런데 네우마만으로는 ‘올라간다’는 건 알아도 ‘얼마나’ 올라가는지는 알 수 없어요. 처음 보는 노래는 여전히 불러 볼 수가 없지요.'},
+ {t:'c',quiz:'m-staff',qt:'음높이를 정확히 적기 위해 중세에 고안된 방법은?',p:'정확한 높이는 어떻게 표시할 수 있을까?',o:[
+  {x:'가로줄을 몇 개 긋고, 줄 위와 줄 사이에 기호를 놓으면 높이가 정확해져요.',r:25,ok:1,re:'이탈리아의 수도사 귀도 다레초가 알린 방법이군요! 줄을 기준으로 삼으면 처음 보는 노래도 바로 부를 수 있겠어요.'},
+  {x:'색깔로 구분해요. 빨간색은 높은 음, 파란색은 낮은 음!',r:5,re:'재미있는 생각이지만, 물감은 아주 귀하답니다. 게다가 색 두 가지로는 높이를 다 나타낼 수 없겠어요.'},
+  {x:'음마다 숫자를 1, 2, 3… 매겨서 적어요.',r:5,re:'숫자는 높이를 알려 주지만, 노래가 오르내리는 모양이 한눈에 보이진 않네요. 더 그림 같은 방법이 있을 거예요.'}]},
+ {t:'doc',title:'루페르츠베르크의 거대한 필사본',src:'12세기 말 · 『리젠코덱스(Riesencodex)』',x:'힐데가르트의 말년 무렵, 그녀의 글과 노래를 한데 모은 거대하고 무거운 필사본이 만들어졌어요. 이 책에는 성가가 줄 위의 네우마로 적혀 있어서, 850년 가까이 지난 오늘날에도 그 노래를 다시 부를 수 있어요. 지금은 독일 비스바덴의 도서관에 보관되어 있어요.'},
+ {t:'c',p:'힐데가르트의 노래는 무엇을 위한 것이었을까?',o:[
+  {x:'하느님을 찬양하는 기도이자, 수녀원장님이 본 환시를 전하는 노래요.',r:25,re:'맞아요. 제게 음악은 하늘의 조화를 땅으로 옮기는 일이랍니다.'},
+  {x:'왕과 귀족을 즐겁게 하는 파티 음악이요.',r:-10,re:'…수녀원에서요? 저희 노래는 예배와 기도를 위한 것이에요.'}]},
+ {t:'gate'},
+ {t:'s',x:'좋아요. 이제 제 노래의 몇 구절을 들려드릴게요. 잘 듣고, 줄 위에 네우마를 올려 선율을 기록해 주세요. 맨 아래 줄이 ‘ut(도)’예요.'},
+ {t:'game'},
+ {t:'s',x:'완벽해요! 이렇게 적어 두면 수백 년 뒤의 사람들도 이 노래를 부를 수 있겠지요. 고마워요, 미래에서 온 친구.'},
+ {t:'end'}]},
+{key:'bar',name:'바로크',en:'Baroque',year:'1717년',place:'독일 바이마르, 궁정 구금실',stampLat:'Weimar, im November 1717',theme:'질서와 대위법',who:'bach',cname:'요한 제바스티안 바흐',short:'바흐',lat:'J. S. Bach',corig:'Johann Sebastian Bach',life:'1685–1750',crystal:'진홍 대위법 크리스탈',game:'counterpoint',res0:20,script:[
+ {t:'n',x:'1717년 11월, 독일 바이마르. 철창 너머 작은 방에서 가발을 쓴 남자가 무릎 위에 악보 종이를 펼쳐 놓고 있다.'},
+ {t:'s',x:'간수는 아닌 것 같은데… 누구시오? 나는 요한 제바스티안 바흐. 바이마르 공작의 궁정 오르가니스트이자 악장이오.'},
+ {t:'s',x:'쾨텐의 레오폴트 공이 나를 궁정악장으로 불러 주었소. 그런데 공작께서 놓아주질 않으셔서 끈질기게 사직을 청했더니, 이렇게 갇혀 버렸지. 먹여 살릴 식구는 많은데…'},
+ {t:'doc',title:'바이마르 궁정 서기의 기록',src:'1717년 · 바이마르 궁정 문서',x:'“11월 6일, 전 악장 겸 궁정 오르가니스트 바흐가 사직을 지나치게 고집한 탓에 재판소 구금실에 갇혔다. 12월 2일, 불명예 해고 통지와 함께 석방되었다.” 바흐는 약 4주 동안 갇혀 있었어요.'},
+ {t:'c',p:'바흐에게 뭐라고 말할까?',o:[
+  {x:'정말 억울하시겠어요. 더 좋은 자리에서 마음껏 음악을 하고 싶으셨던 거잖아요.',r:25,re:'알아주니 고맙소. 이 시대의 음악가는 귀족이나 교회에 고용된 일꾼이라, 떠나는 것도 마음대로 할 수 없다오.'},
+  {x:'공작님 말씀을 그냥 들으시지 그러셨어요.',r:0,re:'허허, 그대 말도 틀리진 않소. 이 시대엔 음악가도 주인의 허락 없이는 일자리를 옮길 수 없으니.'},
+  {x:'전자기타로 록 버전을 만들면 대박 날 거예요!',g:'guitar'}]},
+ {t:'clue',id:'b-clue',clip:'bach_prelude',q:'바흐가 쓴 이 곡을 들어 보세요. 건반을 누르면 줄을 ‘뜯어서’ 반짝이는 소리를 내는 바로크 시대의 건반악기는 무엇일까요?',o:[
+  {x:'하프시코드(쳄발로)',ok:1},{x:'전자 신시사이저'},{x:'파이프 오르간'}],
+  ex:'<b>하프시코드</b>는 건반을 누르면 작은 갈고리가 줄을 뜯어 소리를 내요. 방금 곡은 『평균율 클라비어곡집』 1권의 첫 번째 프렐류드예요.'},
+ {t:'s',x:'여기 갇혀서도 교회 오르간을 위한 짧은 코랄 곡들을 쓰고 있었소. 음악이 없으면 하루도 버틸 수 없으니까.'},
+ {t:'c',quiz:'b-cp',qt:'여러 개의 독립된 선율을 동시에 조화롭게 엮는 바로크의 작곡 기법은?',p:'바흐 음악에서 가장 놀라운 점을 말해 볼까?',o:[
+  {x:'여러 선율이 따로따로 움직이는데도 서로 딱 맞물려요. 대위법이요!',r:25,ok:1,re:'바로 그것이오! 선율 하나하나가 독립된 목소리를 가지면서도 함께 조화를 이루지. 그걸 대위법이라 하오. 푸가는 그 꽃이고.'},
+  {x:'선율이 딱 하나뿐이라 단순해서 좋아요.',r:0,re:'음… 그건 수백 년 전 수도원의 성가 이야기 같구려. 내 음악엔 선율이 여럿 겹쳐 있다오.'},
+  {x:'규칙 없이 마음 가는 대로 쓴 것 같아요.',r:0,re:'오히려 반대요. 나는 음과 음 사이의 규칙을 아주 꼼꼼히 지킨다오.'}]},
+ {t:'c',p:'바흐는 악보 끝에 ‘S.D.G.’라고 적곤 한다. 무엇이라고 말할까?',o:[
+  {x:'‘오직 하느님께 영광(Soli Deo Gloria)’이라는 뜻이죠? 음악으로 신앙을 고백하시는군요.',r:25,re:'그렇소. 내가 쓰는 모든 음표는 결국 그분께 드리는 것이오. 그 생각을 하니 다시 힘이 나는군.'},
+  {x:'멋있어 보이려고 쓰는 사인인가요?',r:-5,re:'허허, 사인이 아니라 기도라오.'}]},
+ {t:'gate'},
+ {t:'s',x:'자, 이곳에서 할 만한 놀이를 하나 합시다. 내가 위 선율을 쓰면, 그대가 아래 선율을 붙이시오. 두 선율이 서로 부딪히지 않고 어울려야 하오.'},
+ {t:'game'},
+ {t:'s',x:'훌륭하오! 12월이면 나는 풀려나 쾨텐으로 떠날 것이오. 그곳에서 쓸 협주곡들이 벌써 머릿속에 울리는군.'},
+ {t:'end'}]},
+{key:'cla',name:'고전',en:'Classical',year:'1802년',place:'오스트리아 빈 근교, 하일리겐슈타트',stampLat:'Heiligenstadt, 1802',theme:'형식과 청각 장애 극복',who:'beethoven',cname:'루트비히 판 베토벤',short:'베토벤',lat:'L. van Beethoven',corig:'Ludwig van Beethoven',life:'1770–1827',crystal:'사파이어 운명 크리스탈',game:'rhythm',res0:20,script:[
+ {t:'n',x:'1802년 가을, 오스트리아 빈 근처의 시골 마을 하일리겐슈타트. 머리가 헝클어진 남자가 편지를 쓰다 말고 책상에 엎드려 있다.'},
+ {t:'s',x:'(크게) 뭐라고? 더 크게 말하게! …미안하네. 나는 루트비히 판 베토벤. 요즘 귀가 점점 들리지 않아.'},
+ {t:'s',x:'작곡가가 소리를 못 듣다니, 이보다 끔찍한 일이 있겠나. 동생들에게 유서 같은 편지를 쓰던 참이야. 머릿속의 교향곡도… 다 포기할까 싶네.'},
+ {t:'doc',title:'하일리겐슈타트 유서',src:'1802년 10월 6일 · 두 동생 카를과 요한에게',x:'베토벤은 귀가 들리지 않는 고통 때문에 삶을 포기하고 싶을 만큼 괴로웠다고 적었어요. 하지만 “나를 붙잡은 것은 오직 예술뿐이었다”며, 마음속 음악을 모두 꺼내기 전에는 떠날 수 없다고 다짐했지요. 이 편지는 부쳐지지 않았고, 1827년 그가 세상을 떠난 뒤 서랍 속에서 발견되었어요.'},
+ {t:'c',p:'절망한 베토벤에게 뭐라고 말할까?',o:[
+  {x:'선생님 머릿속에는 이미 음악이 다 들리잖아요. 귀가 아니라 마음으로 작곡하시는 거예요.',r:25,re:'마음으로… 그래, 나는 악보만 봐도 소리가 들리지. 아직 내 안에는 쓰지 못한 음악이 너무 많아.'},
+  {x:'힘드시면 이제 그만 쉬셔도 돼요.',r:-10,re:'쉬라고? …아니, 아직 나는 할 일이 남았네. 그만두기엔 너무 일러.'},
+  {x:'디지털 보청기를 드릴게요. 블루투스도 돼요!',g:'buds'}]},
+ {t:'clue',id:'c-clue',clip:'fur_elise',q:'베토벤의 피아노곡을 들어 보세요. 같은 선율이 두 번 나오는데, 무엇이 달라졌나요? 바로 이것이 하프시코드와 달리 피아노가 할 수 있는 일이에요.',o:[
+  {x:'처음엔 여리게, 두 번째는 세게 — 건반을 누르는 힘으로 셈여림을 조절했다',ok:1},{x:'두 번째에는 악기가 바이올린으로 바뀌었다'},{x:'아무것도 달라지지 않았다'}],
+  ex:'피아노의 원래 이름 <b>피아노포르테</b>는 ‘여리게-세게’라는 뜻이에요. 건반을 누르는 힘에 따라 소리 크기가 달라지지요. 방금 곡은 『엘리제를 위하여』의 첫 부분이에요.'},
+ {t:'c',p:'소리를 다시 느낄 방법을 제안해 볼까?',o:[
+  {x:'피아노에 막대를 대고 그 끝을 이로 물어 보세요. 소리의 진동이 뼈를 타고 전해질 거예요!',r:25,re:'(막대를 물고 건반을 쾅 내리친다) 오오…! 느껴진다! 소리가 뼈를 타고 들어와! (베토벤이 막대로 피아노의 진동을 느꼈다는 이야기가 전해져요.)'},
+  {x:'대화는 공책에 글로 써서 나누면 돼요.',r:10,re:'그래, 사람들과는 필담 공책으로 이야기하지. 하지만 작곡에는 다른 방법이 필요하네.'}]},
+ {t:'c',quiz:'c-form',qt:'베토벤이 활동한 고전주의 시대 음악의 특징은?',p:'베토벤이 묻는다. “하이든 선생님과 모차르트가 다듬은 우리 시대 음악의 핵심이 뭔지 아나?”',o:[
+  {x:'균형 잡힌 형식과 뚜렷한 구조예요. 소나타 형식처럼요!',r:20,ok:1,re:'그렇지! 튼튼한 건물 같은 형식이야. 나는 그 틀 안에 운명과 싸우는 뜨거운 감정을 담아 보겠네.'},
+  {x:'형식 없이 자유롭게 감정만 쏟아내는 거예요.',r:0,re:'감정은 중요하지. 하지만 우리 시대엔 먼저 형식을 단단히 쌓는다네. 그 자유는 다음 세대의 몫일 거야.'},
+  {x:'반주 없이 한 선율로 부르는 거예요.',r:0,re:'그건 중세 성가 이야기 아닌가? 우린 교향곡과 소나타를 쓰는 시대라네.'}]},
+ {t:'gate'},
+ {t:'s',x:'이제 머릿속 교향곡의 첫 네 음을 꺼내야 해. 운명이 문을 두드리는 소리 말이야! 소리 없이 진동만 보고, 그 리듬을 두드려 주게.'},
+ {t:'game'},
+ {t:'s',x:'느껴진다… 들리지 않아도 느껴져! 이 교향곡은 꼭 완성하겠네. 운명의 목덜미를 움켜쥐고 말겠어!'},
+ {t:'n',x:'교향곡 5번은 1808년 12월 빈에서 처음 연주되었어요.'},
+ {t:'end'}]},
+{key:'rom',name:'낭만',en:'Romantic',year:'1847년',place:'프랑스 파리, 비 오는 살롱',stampLat:'Paris, 1847',theme:'감정과 피아노 시인',who:'chopin',cname:'프레데리크 쇼팽',short:'쇼팽',lat:'Frédéric Chopin',corig:'Frédéric Chopin',life:'1810–1849',crystal:'장밋빛 녹턴 크리스탈',game:'emotion',res0:20,script:[
+ {t:'n',x:'1847년, 프랑스 파리. 비 내리는 창가, 촛불 켠 방에서 마른 체구의 신사가 기침을 하며 피아노 앞에 앉아 있다.'},
+ {t:'s',x:'아, 손님이시군요. 프레데리크 쇼팽입니다. 실례… 요즘 폐가 좋지 않아서요.'},
+ {t:'s',x:'스무 살에 조국 폴란드를 떠난 뒤로 한 번도 돌아가지 못했어요. 몸은 약해지고, 가까웠던 사람들과도 멀어졌지요. 피아노 앞에 앉아도 선율이 떠오르지 않아요.'},
+ {t:'c',p:'쇼팽에게 뭐라고 말할까?',o:[
+  {x:'고향이 많이 그리우시죠. 어릴 때 듣던 폴란드 춤곡을 떠올려 보시면 어떨까요?',r:25,re:'마주르카… 시골 마을 축제에서 들었던 그 리듬. 둘째, 셋째 박에 ‘쿵’ 하고 힘이 실리던… 가슴이 다시 뛰는군요.'},
+  {x:'파리가 훨씬 화려하니 고향은 잊으세요.',r:-10,re:'잊을 수가 없어요. 떠날 때 친구들이 건네준 폴란드의 흙을 아직도 간직하고 있는걸요.'},
+  {x:'비행기 타면 두 시간이면 바르샤바예요!',g:'plane'}]},
+ {t:'clue',id:'r-clue',clip:'nocturne',q:'쇼팽의 녹턴을 들어 보세요. 쇼팽이 ‘피아노의 시인’이라고 불리는 이유는 무엇일까요?',o:[
+  {x:'피아노로 노래하듯 섬세한 감정을 표현해서',ok:1},{x:'교향곡과 오페라를 가장 많이 써서'},{x:'직접 시집을 써서 출판해서'}],
+  ex:'쇼팽은 작품 대부분을 피아노를 위해 썼어요. <b>녹턴(야상곡)</b>은 ‘밤의 노래’라는 뜻으로, 피아노가 사람 목소리처럼 노래하지요. 방금 곡은 녹턴 Op.9-2예요.'},
+ {t:'c',quiz:'r-roman',qt:'낭만주의 음악의 특징으로 알맞은 것은?',p:'쇼팽이 묻는다. “우리 시대의 음악가들이 가장 중요하게 여기는 건 무엇일까요?”',o:[
+  {x:'작곡가 자신의 감정과 상상, 그리고 민족의 정서를 자유롭게 표현하는 것',r:20,ok:1,re:'네. 우리 낭만주의 음악가들은 마음속 목소리를 따르지요. 저에겐 그게 폴란드예요.'},
+  {x:'여러 선율을 엄격한 규칙으로 엮는 대위법',r:0,re:'그건 바흐 선생님의 시대에 더 가깝네요. 물론 저도 연주회 전엔 꼭 바흐를 연습하지만요!'},
+  {x:'세상의 모든 소음을 그대로 음악으로 쓰는 것',r:0,re:'소음을요? 흥미롭지만… 그건 먼 미래의 누군가가 할 생각 같네요.'}]},
+ {t:'doc',title:'슈투트가르트에서 쓴 일기',src:'1831년 9월 · 쇼팽의 일기장',x:'고향으로 돌아가지 못한 채 여행 중이던 스물한 살의 쇼팽은, 바르샤바가 러시아군에게 함락되었다는 소식을 듣고 가족과 친구들을 걱정하며 절망과 분노를 일기에 쏟아냈어요. 『혁명 에튀드』는 이 무렵의 감정과 함께 이야기되곤 해요.'},
+ {t:'c',p:'기침하는 쇼팽을 보며',o:[
+  {x:'오늘은 무리하지 마시고, 짧고 즐거운 곡부터 떠올려 봐요.',r:25,re:'짧고 즐거운 곡… 그러고 보니 상드 부인의 강아지가 제 꼬리를 쫓아 빙글빙글 돌던 모습이 떠오르네요.'},
+  {x:'천재는 쉬지 않아요. 밤새 연습하세요!',r:-10,re:'(콜록콜록) …그러다간 쓰러지고 말 거예요.'}]},
+ {t:'gate'},
+ {t:'s',x:'제 마음속에 있는 두 곡을 들려드릴게요. 하나는 1831년, 바르샤바가 함락됐다는 소식을 듣던 무렵의 곡이고, 다른 하나는 방금 떠올린 그 강아지 곡이에요. 음악에 담긴 감정을 맞혀 주세요.'},
+ {t:'game'},
+ {t:'s',x:'제 마음을 저보다 더 잘 들어 주시는군요. 슬픔도 그리움도, 모두 음악이 될 수 있다는 걸 다시 느꼈어요.'},
+ {t:'end'}]},
+{key:'mod',name:'현대',en:'Modern',year:'1952년',place:'미국 뉴욕주 우드스톡, 매버릭 콘서트홀',stampLat:'Woodstock, N.Y. · Aug. 1952',theme:'고정관념을 깨는 새로운 시도',who:'cage',cname:'존 케이지',short:'케이지',lat:'John Cage',corig:'John Cage',life:'1912–1992',crystal:'은빛 침묵 크리스탈',game:'silence',res0:20,script:[
+ {t:'n',x:'1952년 8월, 미국 뉴욕주 우드스톡. 숲속에 자리한 나무 공연장 무대 옆에서, 한 남자가 초시계를 들여다보고 있다.'},
+ {t:'s',x:'안녕! 나는 존 케이지. 곧 피아니스트 데이비드 튜더가 내 새 곡을 처음으로 연주하는데… 사람들이 화를 낼까 봐 걱정이야.'},
+ {t:'s',x:'그 곡은 4분 33초 동안 피아니스트가 단 한 음도 치지 않아. 피아노 뚜껑을 닫았다 열었다 하면서 시간만 재지. 다들 “이게 무슨 음악이냐!” 하겠지?'},
+ {t:'doc',title:'1952년 8월 29일 연주회',src:'우드스톡 매버릭 콘서트홀 · 피아노 데이비드 튜더',x:'이날 『4′33″』가 처음 연주되었어요. 케이지는 훗날 이렇게 돌아보았어요. 1악장에는 바깥에서 바람이 불었고, 2악장에는 빗방울이 지붕을 두드렸으며, 3악장에는 관객들이 웅성거리거나 자리를 떠나는 소리가 들렸다고요.'},
+ {t:'c',p:'케이지에게 뭐라고 말할까?',o:[
+  {x:'연주를 안 하면… 그동안 들리는 주변의 소리가 음악이 되는 건가요?',r:25,re:'바로 그거야! 바람 소리, 빗소리, 관객이 웅성거리는 소리까지. 세상에 완벽한 ‘침묵’은 없거든.'},
+  {x:'그건 그냥 장난 아닌가요?',r:-5,re:'하하, 그런 말 많이 들어. 그래도 한번 진지하게 귀 기울여 볼래?'},
+  {x:'AI 스피커한테 4분 33초짜리 노래를 만들어 달라고 해요!',g:'speaker'}]},
+ {t:'s',x:'얼마 전 하버드 대학교의 ‘무향실’에 들어가 봤어. 벽이 소리를 전부 빨아들여서 메아리가 전혀 없는 방이지. 그런데도 소리가 두 개 들리더라. 하나는 높고, 하나는 낮은 소리.'},
+ {t:'c',quiz:'x-anech',qt:'무향실에서 존 케이지가 들은 두 소리의 정체는?',p:'케이지가 들은 두 소리는 무엇이었을까?',o:[
+  {x:'케이지 자신의 몸에서 나는 소리 (신경계와 피가 흐르는 소리)',r:20,ok:1,re:'맞아! 기술자가 그렇게 설명해 줬어. 살아 있는 한, 우리는 결코 완벽한 침묵을 들을 수 없는 거야.'},
+  {x:'옆방에서 틀어 놓은 라디오 소리',r:0,re:'그 방은 바깥 소리도 완전히 막혀 있었어. 소리는 훨씬 가까운 곳에서 나고 있었지.'},
+  {x:'벽 속에 숨은 유령의 노랫소리',r:0,re:'하하, 그랬다면 더 재밌는 곡이 나왔겠다! 정답은 훨씬 가까이에 있어.'}]},
+ {t:'clue',id:'x-clue',clip:'tone_row',q:'케이지: “내 스승이었던 쇤베르크 선생님의 ‘12음 기법’ 음악이야. 들어 보면 어떤 느낌이 드니?”',o:[
+  {x:'중심이 되는 으뜸음(조성)이 잘 느껴지지 않는다',ok:1},{x:'도레미파솔 장조라서 아주 밝고 익숙하다'},{x:'한 음만 계속 반복된다'}],
+  ex:'<b>12음 기법</b>은 한 옥타브의 12개 음을 모두 한 번씩 쓴 ‘음렬’로 곡을 만드는 방법이에요. 어느 한 음이 중심이 되지 않도록 하지요. 케이지는 젊은 시절 실제로 쇤베르크에게 배웠어요.'},
+ {t:'c',p:'걱정하는 케이지를 응원하자.',o:[
+  {x:'‘음악이란 무엇인가’를 다시 생각하게 만드는 것 자체가 멋진 도전이에요.',r:25,re:'고마워! 음악의 경계를 넓히는 것, 그게 내가 하고 싶은 일이야.'},
+  {x:'그래도 멜로디는 꼭 넣으셔야죠.',r:0,re:'멜로디는 다른 곡에서 실컷 쓸게. 이번엔 사람들이 ‘듣는 방법’ 자체를 바꾸고 싶어.'}]},
+ {t:'gate'},
+ {t:'s',x:'그럼 직접 연주해 보자. 악보에는 세 악장 모두 ‘TACET(쉼)’이라고만 적혀 있어. 아무것도 누르지 말고, 그냥 들어 봐. 그게 이 곡의 연주야.'},
+ {t:'game'},
+ {t:'s',x:'들었지? 그게 바로 오늘의 음악이야. 소리를 ‘만드는’ 것뿐 아니라, 이미 있는 소리를 ‘듣는’ 것도 음악이 될 수 있어.'},
+ {t:'end'}]}
+];
+
+const GLITCH={
+  press:{t:'인쇄기 등장?!',x:'구텐베르크의 활판 인쇄술은 약 300년 뒤인 1450년경에야 등장해요. 수녀원 한가운데 거대한 인쇄기가 떨어져서, 성가 대신 ‘철컥철컥’ 소리만 울립니다!'},
+  guitar:{t:'바흐, 록스타가 되다?!',x:'전기 기타는 1930년대에야 발명돼요. 바흐가 가발을 휘날리며 전자기타 솔로를 시작했습니다! 바로크 음악의 뿌리가 흔들려요.',clip:'riff'},
+  buds:{t:'연결 실패…',x:'디지털 보청기는 20세기 후반에야 나와요. 베토벤이 블루투스 이어폰을 귀에 꽂고 “연결할 기기가 없다고?!” 하고 외칩니다.'},
+  plane:{t:'1847년의 여객기?!',x:'라이트 형제의 첫 동력 비행은 1903년이에요. 쇼팽의 창밖으로 여객기가 지나가자 파리 사람들이 모두 얼어붙었습니다!'},
+  speaker:{t:'“죄송해요, 잘 이해하지 못했어요.”',x:'AI 스피커는 수십 년 뒤의 이야기예요. 1952년 공연장 무대 위에 나타난 스마트 스피커가 ‘4분 33초 타이머’를 맞추더니 알람을 울려 버립니다!'}
+};
+
+const CARDS=[
+ {era:0,who:'hildegard',name:'힐데가르트 폰 빙엔',orig:'Hildegard von Bingen',life:'1098–1179 · 독일',about:'수녀원장이자 작곡가·저술가·자연 연구가. 자신이 본 환시를 노래와 책으로 남겼어요.',works:['성가 모음 『심포니아』','음악극 『덕의 질서(Ordo Virtutum)』'],clip:'chant',yt:'Hildegard von Bingen chant'},
+ {era:0,bonus:1,name:'귀도 다레초',orig:"Guido d'Arezzo",life:'991년경–1033년 이후 · 이탈리아',about:'선을 그어 음높이를 정확히 적는 기보법을 널리 알린 수도사. 성 요한 찬가에서 ‘ut-re-mi-fa-sol-la’ 계명을 따왔어요.',works:['선을 이용한 기보법','계명창(솔미제이션)','‘귀도의 손’ 학습법'],yt:'Ut queant laxis hymn'},
+ {era:1,who:'bach',name:'요한 제바스티안 바흐',orig:'Johann Sebastian Bach',life:'1685–1750 · 독일',about:'‘음악의 아버지’. 여러 선율을 정교하게 엮는 대위법과 푸가의 대가예요.',works:['『평균율 클라비어곡집』','『브란덴부르크 협주곡』','『마태 수난곡』','『토카타와 푸가 d단조』'],clip:'toccata',yt:'Bach Toccata and Fugue in D minor'},
+ {era:1,bonus:1,name:'안토니오 비발디',orig:'Antonio Vivaldi',life:'1678–1741 · 이탈리아',about:'베네치아의 ‘붉은 머리 사제’. 독주 악기와 합주가 주고받는 협주곡을 수백 곡 썼어요.',works:['바이올린 협주곡 『사계』','『글로리아』'],clip:'spring',yt:'Vivaldi Four Seasons Spring'},
+ {era:2,who:'beethoven',name:'루트비히 판 베토벤',orig:'Ludwig van Beethoven',life:'1770–1827 · 독일 출생, 빈 활동',about:'청력을 잃어 가면서도 걸작을 남긴 작곡가. 고전주의 형식에 뜨거운 감정을 담아 낭만주의로 가는 다리를 놓았어요.',works:['교향곡 5번 「운명」','교향곡 9번 「합창」','피아노 소나타 「월광」·「비창」','『엘리제를 위하여』'],clip:'beethoven5',yt:'Beethoven Symphony No. 5'},
+ {era:2,bonus:1,name:'볼프강 아마데우스 모차르트',orig:'Wolfgang Amadeus Mozart',life:'1756–1791 · 오스트리아',about:'어린 시절부터 유럽을 돌며 연주한 천재. 짧은 생애 동안 600곡이 넘는 작품을 남겼어요.',works:['『아이네 클라이네 나흐트무지크』','오페라 『마술피리』','오페라 『피가로의 결혼』'],clip:'mozart',yt:'Mozart Eine kleine Nachtmusik'},
+ {era:3,who:'chopin',name:'프레데리크 쇼팽',orig:'Frédéric Chopin',life:'1810–1849 · 폴란드 출생, 파리 활동',about:'‘피아노의 시인’. 마주르카·폴로네즈 같은 폴란드 춤곡에 고향을 향한 그리움을 담았어요. 그의 심장은 바르샤바로 돌아갔어요.',works:['『혁명 에튀드』 Op.10-12','『강아지 왈츠』 Op.64-1','녹턴 Op.9-2','폴로네즈 「영웅」'],clip:'nocturne',yt:'Chopin Nocturne Op 9 No 2'},
+ {era:3,bonus:1,name:'프란츠 리스트',orig:'Franz Liszt',life:'1811–1886 · 헝가리',about:'눈부신 기교로 유럽을 사로잡은 피아니스트. 이야기나 그림을 음악으로 그리는 ‘교향시’를 만들었어요. 쇼팽의 친구이기도 했어요.',works:['『헝가리 광시곡』 2번','『사랑의 꿈』 3번','『라 캄파넬라』'],yt:'Liszt La Campanella'},
+ {era:4,who:'cage',name:'존 케이지',orig:'John Cage',life:'1912–1992 · 미국',about:'‘무엇이 음악인가’를 다시 묻게 한 실험 음악가. 우연과 침묵, 일상의 소리를 음악 안으로 끌어들였어요.',works:['『4분 33초』 (1952)','프리페어드 피아노 음악','우연성 음악'],clip:'ambient',yt:'John Cage 4 33 David Tudor'},
+ {era:4,bonus:1,name:'아르놀트 쇤베르크',orig:'Arnold Schoenberg',life:'1874–1951 · 오스트리아 출생, 미국 활동',about:'12개 음을 모두 평등하게 쓰는 ‘12음 기법’을 만든 작곡가. 젊은 존 케이지의 스승이었어요.',works:['『달에 홀린 피에로』','『정화된 밤』','피아노 모음곡 Op.25'],clip:'tone_row',yt:'Schoenberg Pierrot Lunaire'}
+];
+
+/* =========================================================
+   HUD · 오버레이
+   ========================================================= */
+function updateHud(){
+  const e=clamp(S.energy,0,100); $('#enNum').textContent=e; $('#enRing').style.strokeDashoffset=String(100.5*(1-e/100));
+  $('#enRing').style.stroke=e<=30?'#ee6a5a':'#d9a648';
+  $('#slots').innerHTML=ERAS.map((er,i)=>`<span class="slot ${S.crystals[i]?'on':''}" style="--glow:${ERA_HEX[i]}" title="${er.name} · ${S.crystals[i]?er.crystal:'아직 없음'}">${gem(ERA_HEX[i],S.crystals[i],20)}</span>`).join('');
+}
+function setEra(v){stage.dataset.era=String(v);stage.scrollTop=0}
+function pageMode(){stage.classList.remove('vn-mode');WAIT=null;clearTimeout(autoT)}
+$('#btnHome').onclick=()=>{closeOverlay();bgmStop();screenTitle()};
+$('#btnCodex').onclick=()=>openCodex();
+function openOverlay(html,cls=''){overlay.innerHTML=`<div class="modal ${cls}" role="dialog" aria-modal="true">${html}</div>`;overlay.hidden=false;const f=overlay.querySelector('button,[href],input');if(f)f.focus({preventScroll:true})}
+function closeOverlay(){overlay.hidden=true;overlay.innerHTML='';overlay.dataset.dismiss='0'}
+overlay.addEventListener('click',e=>{if(e.target===overlay&&overlay.dataset.dismiss==='1'){const c=$('#cx');c?c.click():closeOverlay()}});
+function confirmBox(msg,yes,no,onYes){
+  openOverlay(`<h3>${msg}</h3><div class="acts"><button class="btn primary" id="cfY">${yes}</button><button class="btn" id="cfN">${no}</button></div>`,'confirm');
+  $('#cfY').onclick=()=>{closeOverlay();onYes()}; $('#cfN').onclick=closeOverlay;
+}
+
+/* =========================================================
+   타이틀
+   ========================================================= */
+function screenTitle(){
+  stopClip(); pageMode(); E=null; V=null; setEra('title');
+  const n=S.crystals.filter(Boolean).length, has=!!S.name;
+  stage.innerHTML=`<section class="title-screen">
+    <div>
+      <p class="eyebrow">서양음악사 시간 여행 비주얼 노벨</p>
+      <h1>사라진 멜로디<small>타임 하모니</small></h1>
+      <p class="lead">세상에서 음악이 하나둘 사라지고 있어요. 낡은 카세트 타임머신을 타고 중세부터 현대까지 다섯 작곡가를 만나, 하모니 크리스탈 5개를 모아 주세요.</p>
+      <form id="fStart" class="start-form" autocomplete="off">
+        <label for="inName">이름</label><input id="inName" maxlength="20" required placeholder="예: 김하모">
+        <label for="inCls">학번·반</label><input id="inCls" maxlength="24" placeholder="선택 · 예: 2학년 3반 15번">
+        <button class="btn primary" type="submit">새로 시작</button>
+      </form>
+      ${has?`<button class="btn" id="btnCont">이어하기 — ${esc(S.name)} · 크리스탈 ${n}/5</button>`:''}
+      <div class="title-links"><button id="tCodex">음악 도감</button><button id="tTeacher">선생님 페이지</button>${S.finished?'<button id="tCert">수료증 다시 보기</button>':''}</div>
+    </div>
+    <div class="cassette" aria-hidden="true"><div class="label"><b>타임 하모니 C-90</b><span>SIDE A · 1150 → 1952</span><i class="stripe"></i></div><div class="win"><i class="reel"></i><i class="reel"></i></div><div class="foot"></div></div>
+  </section>`;
+  $('#fStart').onsubmit=e=>{e.preventDefault();const name=$('#inName').value.trim(),cls=$('#inCls').value.trim();if(!name)return;
+    const go=()=>{S=freshState(name,cls);save();updateHud();startPrologue()};
+    if(has&&!S.finished) confirmBox(`${esc(S.name)}의 진행 기록(크리스탈 ${n}개)을 지우고 새로 시작할까요?`,'새로 시작','취소',go); else go();};
+  if(has) $('#btnCont').onclick=()=>{if(S.finished) screenCert(); else screenMap()};
+  $('#tCodex').onclick=()=>openCodex(); $('#tTeacher').onclick=screenTeacher;
+  if(S.finished) $('#tCert').onclick=screenCert;
+}
+
+/* =========================================================
+   비주얼 노벨 엔진
+   ========================================================= */
+let typing=null, WAIT=null, autoT=null, AUTO=false, LOG=[];
+function typeInto(el,text,speed,onDone){
+  finishType();
+  if(reduceMotion){el.textContent=text;onDone&&onDone();return}
+  let i=0; const st={el,text,onDone,id:setInterval(()=>{i+=1;el.textContent=text.slice(0,i);if(i>=text.length)finishType()},speed||24)};
+  typing=st;
+}
+function finishType(){ if(!typing) return; const st=typing; typing=null; clearInterval(st.id); st.el.textContent=st.text; st.onDone&&st.onDone() }
+function vnAdvance(){ if(typing){finishType();return} if(WAIT){const f=WAIT;WAIT=null;clearTimeout(autoT);f()} }
+stage.addEventListener('click',e=>{ if(!stage.classList.contains('vn-mode'))return; if(e.target.closest('button,a,input,label,.vn-menu,.choices'))return; vnAdvance(); });
+
+const PEOPLE={
+  me:()=>({n:S.name||'나',cls:'me'}),
+  yun:()=>({n:'윤서',cls:'yun',sub:'같은 반 친구'}),
+  harmo:()=>({n:'하모',cls:'harmo',sub:'타임 하모니 안내자'})
+};
+function vnShell(o){
+  stage.classList.add('vn-mode');
+  stage.innerHTML=`<section class="vn ${o.period?'period':''}" data-era="${o.era??'pro'}" style="${o.era!=null?`--era-ink:${ERA_INK[o.era]};--era-font:${ERA_FONT[o.era]}`:''}">
+    <div class="vn-bg" id="vbg"></div><div class="vn-grain"></div><div class="vn-chars" id="chars"></div><div class="vn-cg" id="vcg" hidden></div>
+    <div class="vn-top" id="vtop"></div><div class="vn-fx" id="vfx"></div>
+    <div class="vn-ui"><div class="vn-menu"><button id="vLog">대사 기록</button><button id="vAuto" aria-pressed="${AUTO}">자동 넘김</button>${o.skip?'<button id="vSkip">건너뛰기</button>':''}</div><div class="vn-box" id="dlg" aria-live="polite"></div></div>
+  </section>`;
+  $('#vLog').onclick=()=>{overlay.dataset.dismiss='1';openOverlay(`<div class="acts" style="justify-content:space-between"><h3>대사 기록</h3><button class="close-x" id="cx">닫기</button></div><div class="log">${LOG.slice(-60).map(l=>`<p>${l.n?`<b>${esc(l.n)}</b>`:''}${esc(l.x)}</p>`).join('')||'<p class="muted">아직 대사가 없어요.</p>'}</div>`);$('#cx').onclick=closeOverlay};
+  $('#vAuto').onclick=e=>{AUTO=!AUTO;e.currentTarget.setAttribute('aria-pressed',String(AUTO));if(AUTO&&WAIT&&!typing)autoT=setTimeout(vnAdvance,1200)};
+  if(o.skip) $('#vSkip').onclick=o.skip;
+}
+function setBg(key,instant){
+  const b=$('#vbg'); if(!b) return Promise.resolve();
+  const src=IOK['bg_'+key], html=()=>src?`<img class="bgimg" src="${src}" alt="">`:BG[key]();
+  const put=()=>{b.innerHTML=html();b.dataset.k=key;b.classList.toggle('photo',!!src);b.classList.remove('fadeportraits')};
+  if(instant||!b.innerHTML){put();return Promise.resolve()}
+  b.classList.add('fading');
+  return wait(450).then(()=>{put();b.classList.remove('fading')});
+}
+function charSvg(c,e){
+  const who=c==='comp'?E.era.who:c, src=chImg(who,e);
+  if(src) return `<img src="${src}" alt="">`;
+  if(c==='yun') return spriteYun(e||'normal'); if(c==='harmo') return spriteHarmo(e||'normal'); if(c==='comp') return portrait(E.era.who,'',E.era.cname,{bare:true,mood:e}); return '' }
+function vnShow(c,e,p){
+  let el=$(`#chars .char[data-c="${c}"]`);
+  if(!el){el=document.createElement('div');el.className=`char ${c==='comp'?'comp':''} ${c}`;el.dataset.c=c;$('#chars').appendChild(el)}
+  if(e||!el.innerHTML){el.dataset.e=e||'normal';el.innerHTML=charSvg(c,e);el.classList.toggle('img',!!el.querySelector('img'))}
+  if(p){el.classList.remove('p-left','p-right');if(p!=='center')el.classList.add('p-'+p)}
+}
+function vnHide(c){const el=$(`#chars .char[data-c="${c}"]`);if(el){el.classList.add('out');setTimeout(()=>el.remove(),400)}}
+function vnFocus(c){$$('#chars .char').forEach(el=>el.classList.toggle('dim',!!c&&$$('#chars .char').length>1&&el.dataset.c!==c))}
+function vnSay(who,text,cb,opt={}){
+  const d=$('#dlg'); const p=who&&PEOPLE[who]?PEOPLE[who]():who?{n:who.n,sub:who.sub,cls:''}:null;
+  text=nm(text); LOG.push({n:p?p.n:'',x:text});
+  d.innerHTML=`${p?`<span class="nameplate ${p.cls||''}">${esc(p.n)}${p.sub?`<small>${esc(p.sub)}</small>`:''}</span>`:''}<p class="line ${p?'say':'narr'}"></p><button class="next-ind" id="go" aria-label="다음">▼</button>`;
+  const go=$('#go'); go.onclick=e=>{e.stopPropagation();vnAdvance()};
+  WAIT=cb; clearTimeout(autoT);
+  typeInto(d.querySelector('.line'),text,opt.speed,()=>{if(AUTO&&WAIT)autoT=setTimeout(vnAdvance,1400+text.length*25)});
+  go.focus({preventScroll:true});
+}
+function vnChoices(prompt,list,onPick){
+  const d=$('#dlg'); WAIT=null;
+  d.innerHTML=`<span class="nameplate me">${esc(S.name||'나')}</span>${prompt?`<p class="line prompt">${nm(prompt)}</p>`:''}<div class="choices">${list.map((x,k)=>`<button class="choice" data-k="${k}"><span class="k">${k+1}</span><span>${nm(x)}</span></button>`).join('')}</div>`;
+  $$('.choice',d).forEach(b=>b.onclick=()=>{LOG.push({n:S.name||'나',x:nm(list[+b.dataset.k])});onPick(+b.dataset.k)});
+  const f=d.querySelector('.choice'); if(f) f.focus({preventScroll:true});
+}
+function vnFx(v){
+  if(v==='flash'){const f=$('#vfx');f.classList.remove('flash');void f.offsetWidth;f.classList.add('flash');sfx('chime');return wait(500)}
+  if(v==='shake'){sfx('static');stage.classList.add('shake');return wait(700).then(()=>stage.classList.remove('shake'))}
+  if(v==='fade'){$('#vbg').classList.add('fadeportraits');sfx('static');return wait(300)}
+  if(v==='warp'){const w=document.createElement('div');w.className='warp';w.innerHTML=`<svg viewBox="-100 -100 200 200">${ERA_HEX.map((c,i)=>`<circle r="${20+i*16}" fill="none" stroke="${c}" stroke-width="4" stroke-dasharray="${8+i*3} ${10+i*4}"/>`).join('')}</svg>`;$('.vn').appendChild(w);sfx('warp');return wait(1800)}
+  return Promise.resolve();
+}
+const CG={
+  playlist:()=>{const tracks=[['최애 아이돌 신곡','K-POP · 3:12','#de86ad'],['보스전 BGM','게임 OST · 2:48','#5f92e3'],['공부할 때 듣는 로파이','유튜브 음악 · 1:00:00','#86d8d3'],['졸업식 합창곡','학교 음악 · 4:05','#e8c35c']];
+    return `<div class="playlist"><div class="ph"><span>07:31</span><span>내 플레이리스트</span><span>▮▮▮</span></div>${tracks.map(([a,b,c])=>`<div class="track"><i style="background:${c}"></i><div><b>${a}</b><small>${b}</small></div></div>`).join('')}</div>`},
+  signal:()=>`<div class="signal">[수신 · 발신 연도: 알 수 없음]
+
+서양음악사의 거장들이 삶의 위기에 빠져
+명곡을 완성하지 못하고 있다.
+현대 음악의 뿌리가 차례로 무너지는 중.
+
+다섯 시대로 가서 그들의 고민을 들어 줄 것.
+영감이 담긴 ‘하모니 크리스탈’ 5개를 모으면
+음악은 돌아온다.                    ▶ PLAY</div>`
+};
+
+/* ---------- 프롤로그 대본 ---------- */
+const PRO=[
+ {t:'bgm',v:'on'},{t:'bg',v:'room'},
+ {t:'say',x:'월요일 아침 7시 30분. 평소처럼 알람 음악이 울려야 할 시간인데…'},
+ {t:'say',x:'…조용하다. 이상할 만큼 조용하다.'},
+ {t:'say',c:'me',x:'어? 알람이 왜 안 울렸지?'},
+ {t:'cg',v:'playlist'},
+ {t:'say',x:'휴대폰을 켜 보니, 즐겨 듣던 플레이리스트의 노래가 하나씩 회색으로 변하더니 사라지고 있었다.'},
+ {t:'say',c:'me',x:'뭐야, 이거… 오류인가? 다시 켜 봐도 똑같잖아!'},
+ {t:'cgoff'},{t:'bg',v:'classroom'},
+ {t:'say',x:'등굣길에도, 버스 안에서도, 편의점에서도. 어디서도 음악이 들리지 않았다.'},
+ {t:'show',c:'yun',e:'shock'},
+ {t:'say',c:'yun',e:'shock',x:'{name}! 너도 그래? 내 플레이리스트가 텅 비었어! 어제 나온 신곡까지 전부!'},
+ {t:'choice',o:[{x:'나도! 게임 배경음악까지 안 나와.',c:'yun',e:'sad',re:'보스전 음악 없는 게임이라니… 그건 너무 슬프다.'},{x:'음악 앱이 고장 난 거 아니야?',c:'yun',e:'serious',re:'앱 문제가 아니래. 텔레비전도, 라디오도, 학교 방송도 다 그래.'}]},
+ {t:'say',c:'yun',e:'normal',x:'뉴스에서도 난리야. 전 세계에서 노래가 하나씩 사라지고 있대. 그것도 오래된 곡의 ‘뿌리’부터 차례대로.'},
+ {t:'say',c:'yun',e:'sad',x:'아까 음악 시간에 리코더를 불었거든? 근데… 소리가 안 났어. 진짜로.'},
+ {t:'fx',v:'shake'},{t:'clip',c:'chant'},
+ {t:'say',x:'그때, 교실 스피커에서 지지직 잡음이 흘렀다. 그 사이로 처음 듣는 낯선 노랫소리가 아주 희미하게 섞여 들려왔다.'},
+ {t:'say',c:'yun',e:'shock',x:'들었어? 방금 그거… 노래였지? 음악실 쪽에서 나는 것 같은데!'},
+ {t:'hide',c:'yun'},{t:'bg',v:'hallway'},
+ {t:'say',x:'방과 후. 텅 빈 복도 끝, 음악실 문틈으로 주황빛이 새어 나온다.'},
+ {t:'show',c:'yun',e:'serious'},
+ {t:'say',c:'yun',e:'serious',x:'…같이 가 줄게. 너 혼자 보내면 내가 더 무서울 것 같아.'},
+ {t:'choice',o:[{x:'고마워. 문은 내가 열게.',c:'yun',e:'smile',re:'그럼 나는 바로 뒤에 있을게. 하나, 둘, 셋!'},{x:'솔직히 나도 좀 무서워…',c:'yun',e:'smile',re:'괜찮아, 둘이면 덜 무섭잖아. 하나, 둘, 셋!'}]},
+ {t:'hide',c:'yun'},{t:'bgm',v:'off'},{t:'bg',v:'musicroom'},
+ {t:'say',x:'음악실 벽에 걸린 작곡가들의 초상화가 우리를 내려다본다.'},
+ {t:'fx',v:'fade'},
+ {t:'say',x:'그런데… 초상화 속 얼굴이 하나씩 희미해지고 있었다. 마치 처음부터 없었던 사람처럼.'},
+ {t:'say',x:'피아노 위에서는 아무도 쓰지 않던 낡은 카세트 플레이어가 혼자 돌아가고 있었다. 찰칵, 찰칵.'},
+ {t:'fx',v:'flash'},
+ {t:'show',c:'yun',e:'shock',p:'left'},{t:'show',c:'harmo',e:'smile',p:'right'},
+ {t:'say',c:'harmo',e:'smile',x:'드디어 신호를 받았구나! 기다리고 있었어.'},
+ {t:'say',c:'yun',e:'shock',x:'카, 카세트에서 사람이 나왔어?!'},
+ {t:'say',c:'harmo',e:'normal',x:'나는 하모. 이 카세트, 아니 시간 여행 장치 ‘타임 하모니’의 안내자야.'},
+ {t:'bgm',v:'on'},
+ {t:'say',c:'harmo',e:'serious',x:'지금 과거에 큰 문제가 생겼어. 음악의 역사를 만든 거장들이 저마다 삶의 위기에 빠져서, 명곡을 완성하지 못하고 있어.'},
+ {t:'cg',v:'signal'},
+ {t:'say',c:'harmo',e:'serious',x:'뿌리가 끊기면 줄기도 잎도 시들잖아? 바흐가 없으면 베토벤도 없고, 베토벤이 없으면… 네가 좋아하는 노래도 없어.'},
+ {t:'cgoff'},
+ {t:'say',c:'harmo',e:'normal',x:'그래서 부탁하러 왔어. 다섯 시대로 가서 작곡가들의 고민을 들어 줘. 마음이 통하면 그들의 영감이 ‘하모니 크리스탈’로 맺힐 거야.'},
+ {t:'choice',o:[{x:'좋아, 내가 갈게!',c:'harmo',e:'smile',re:'역시! 신호가 너를 고른 데는 이유가 있었네.'},{x:'잠깐, 그걸 왜 하필 내가…?',c:'harmo',e:'smile',re:'이 신호는 음악을 진심으로 좋아하는 사람한테만 들리거든. 너한테 들렸잖아?'}]},
+ {t:'say',c:'yun',e:'smile',x:'{name}, 다녀와. 난 여기서 카세트 지키고 있을게. 돌아오면 제일 먼저 신곡 같이 듣자!'},
+ {t:'hide',c:'yun'},{t:'show',c:'harmo',e:'normal',p:'center'},
+ {t:'say',c:'harmo',e:'normal',x:'출발 전에 규칙 세 가지! 첫째, 작곡가의 마음에 공감하기. 그 사람의 시대와 성격에 맞는 말을 골라야 ‘공감도’가 올라가.'},
+ {t:'say',c:'harmo',e:'smile',x:'둘째, 귀 기울이기. ‘음악 단서’를 잘 들으면 답이 보여. 화면 아래 카세트 바에서 언제든 다시 들을 수 있어.'},
+ {t:'say',c:'harmo',e:'serious',x:'셋째, 그 시대에 없던 물건은 절대 금지! 역사가 뒤틀리면 내 에너지가 줄어들거든. 진짜 아파.'},
+ {t:'say',c:'harmo',e:'smile',x:'준비됐지? 재생 버튼을 누르는 순간, 출발이야!'},
+ {t:'fx',v:'warp'},{t:'end'}
+];
+let V=null;
+function startPrologue(){
+  stopClip(); closeOverlay(); E=null; setEra('title'); LOG=[];
+  V={i:0,script:PRO};
+  vnShell({skip:()=>{bgmStop();stopClip();V=null;screenMap()}});
+  vnRun();
+}
+async function vnRun(){
+  if(!V) return; const n=V.script[V.i], next=()=>{if(!V)return;V.i++;vnRun()};
+  switch(n.t){
+    case 'bg': await setBg(n.v); next(); break;
+    case 'bgm': n.v==='on'?bgmStart():bgmStop(); next(); break;
+    case 'show': vnShow(n.c,n.e,n.p); next(); break;
+    case 'hide': vnHide(n.c); next(); break;
+    case 'clip': playClip(n.c,{limit:8}); next(); break;
+    case 'fx': await vnFx(n.v); next(); break;
+    case 'cg': {const g=$('#vcg');g.innerHTML=CG[n.v]();g.hidden=false;if(n.v==='playlist'){$$('.track',g).forEach((el,i)=>setTimeout(()=>{el.classList.add('gone');if(i%2===0)sfx('buzz')},900+i*700))}next();break}
+    case 'cgoff': $('#vcg').hidden=true; next(); break;
+    case 'say': if(n.c&&n.c!=='me'){vnShow(n.c,n.e);vnFocus(n.c)} vnSay(n.c,n.x,next); break;
+    case 'choice': {const ord=shuffle(n.o.map((_,i)=>i));vnChoices('',ord.map(i=>n.o[i].x),k=>{const o=n.o[ord[k]];vnShow(o.c,o.e);vnFocus(o.c);vnSay(o.c,o.re,next)}); break;}
+    case 'end': bgmStop(); V=null; sfx('rewind'); screenMap(); break;
+  }
+}
+
+/* =========================================================
+   지도(타임라인)
+   ========================================================= */
+const HINTS=['첫 목적지는 1150년경 독일의 수녀원이야. 그때는 악보가 거의 없어서 노래를 외워서 불렀대.','다음은 1717년 바이마르! 바흐 아저씨가 갇혀 있다는 신호가 와.','1802년 빈 근교야. 베토벤 선생님의 귀가… 서두르자.','1847년 파리. 비가 오는 밤이래. 쇼팽은 몸이 많이 약하니까 다정하게 대해 줘.','마지막은 1952년 미국! 이번엔… 소리가 없는 음악이라고?','크리스탈을 전부 모았어! 이제 음악을 되살리러 가자!'];
+function nextOpen(){const i=S.crystals.findIndex(x=>!x);return i<0?5:i}
+function screenMap(){
+  stopClip(); pageMode(); E=null; setEra('map'); updateHud();
+  const nx=nextOpen();
+  stage.innerHTML=`<section class="map">
+    <div class="guide"><div class="mini">${pic('harmo',nx===5?'smile':'normal')}</div><p class="bubble"><b>하모</b>${HINTS[nx]}</p></div>
+    <div class="chart"><p class="eyebrow">시간 여행 지도 · ${esc(S.name)}의 여정</p><h2>어느 시대로 떠날까요?</h2>
+    <div class="timeline">${ERAS.map((e,i)=>{const st=S.crystals[i]?'done':i===nx?'open':'locked';
+      return `<button class="node ${st}" data-i="${i}" style="--era:${ERA_HEX[i]}" ${st==='locked'?'aria-disabled="true"':''}>
+        <span class="dot">${S.crystals[i]?gem(ERA_HEX[i],1,30):`<span style="font-family:var(--f-fell);font-size:20px;color:#6b5a45">${['I','II','III','IV','V'][i]}</span>`}</span>
+        <span class="yr">${e.stampLat.split(' · ')[0]}</span><b>${e.name}</b><span class="who">${e.short} · ${e.theme}</span>
+        <span class="st">${st==='done'?'크리스탈 획득':st==='open'?'출발 가능':'잠김'}</span></button>`}).join('')}</div>
+    <p class="flow">${ERAS.map(e=>`<span>[${e.name}] ${e.theme}</span>`).join('<span aria-hidden="true">→</span>')}</p></div>
+    <div class="acts">${nx===5?'<button class="btn primary" id="toEnd">음악이 돌아오는 순간 보기</button>':''}<button class="btn" id="toCert">지금까지의 기록</button><button class="btn" id="toPro">프롤로그 다시 보기</button></div>
+  </section>`;
+  $$('.node').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(b.classList.contains('locked')){sfx('buzz');return}chapter(i)});
+  if(nx===5) $('#toEnd').onclick=screenEnding;
+  $('#toCert').onclick=screenCert; $('#toPro').onclick=startPrologue;
+}
+const TC=[
+  ()=>`<div class="illum">A</div><p class="lat">Anno Domini MCL</p><p class="lat2">Rupertsberg prope Bingen</p>`,
+  ()=>`<p class="orn">❦ ❦ ❦</p><p class="lat">WEIMAR</p><p class="lat2">im November, Anno MDCCXVII</p><p class="orn">— ✠ —</p>`,
+  ()=>`<p class="lat">Heiligenstadt, den 6ten October 1802</p><p class="lat2">Für meine Brüder Carl und Johann</p>`,
+  ()=>`<p class="lat">Paris</p><p class="lat2">— automne 1847 —</p>`,
+  ()=>`<p class="lat">MAVERICK CONCERT HALL</p><p class="lat2">WOODSTOCK, N.Y. · FRIDAY, AUGUST 29, 1952<br>DAVID TUDOR, PIANO</p>`
+];
+function chapter(i){
+  const e=ERAS[i]; pageMode(); setEra(i); sfx('rewind');
+  stage.innerHTML=`<section class="tc-wrap"><div class="tc tc-${i}">${TC[i]()}<p class="eyebrow" style="color:inherit;opacity:.7;margin-top:10px">제${i+1}장 · ${e.en}</p><h2>${e.name}</h2><p class="theme">${e.theme}</p><p class="meta">${e.year} · ${e.place}</p><button class="btn" id="go">도착하기</button></div></section>`;
+  $('#go').focus(); $('#go').onclick=()=>startEra(i);
+}
+
+/* =========================================================
+   시대 장면 (비주얼 노벨)
+   ========================================================= */
+let E=null;
+function startEra(i){E={i,era:ERAS[i],idx:0,res:ERAS[i].res0,removed:new Set(),shown:false};LOG=[];renderScene();run()}
+function moodOf(){return E.res<40?'sad':E.res>=70?'happy':'normal'}
+function renderScene(){
+  const e=E.era; setEra(E.i);
+  vnShell({period:true,era:E.i});
+  setBg(ERA_BG[E.i],true);
+  $('#vtop').innerHTML=`<div class="vu"><div class="vu-head"><span>${e.short}의 공감도 <span class="delta" id="resD"></span></span><b id="resNum">${E.res}</b></div><div class="vu-track"><div class="vu-fill" id="resFill"></div><i class="vu-mark" style="left:60%"></i></div><small>60 이상이면 크리스탈을 얻어요</small></div>
+    <div class="stamp"><i>${e.stampLat}</i>${e.place}</div>`;
+  if(E.shown) vnShow('comp',moodOf());
+  setRes(E.res,0);
+}
+function setRes(v,d){
+  const before=E.shown?moodOf():null;
+  E.res=clamp(v,0,100); const f=$('#resFill'); if(!f) return;
+  f.style.width=E.res+'%'; $('#resNum').textContent=E.res;
+  const dd=$('#resD'); if(d){dd.textContent=(d>0?'+':'')+d;dd.style.color=d>0?'var(--ok)':'var(--bad)';setTimeout(()=>{if(dd)dd.textContent=''},1800)}
+  if(E.shown&&before!==moodOf()) vnShow('comp',moodOf());
+}
+const compP=()=>({n:E.era.short,sub:E.era.lat});
+function advance(){E.idx++;run()}
+function run(){
+  const n=E.era.script[E.idx];
+  switch(n.t){
+    case 'n': vnSay(null,n.x,advance); break;
+    case 's': if(!E.shown){E.shown=true;vnShow('comp',moodOf())} vnSay(compP(),n.x,advance); break;
+    case 'clip': playClip(n.c); advance(); break;
+    case 'c': choose(n); break;
+    case 'clue': clue(n); break;
+    case 'doc': showDoc(n,advance); break;
+    case 'gate': gate(); break;
+    case 'game': pageMode(); GAMES[E.era.game](()=>{renderScene();advance()}); break;
+    case 'end': award(E.i); break;
+  }
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+/* 보기 순서: 장면마다 한 번 섞어서 그 대화 동안 유지 */
+function orderOf(n){E.ord=E.ord||{};if(!E.ord[E.idx])E.ord[E.idx]=shuffle(n.o.map((_,i)=>i));return E.ord[E.idx]}
+function choose(n){
+  const list=orderOf(n).map(i=>({o:n.o[i],i})).filter(({i})=>!E.removed.has(E.idx+':'+i));
+  vnChoices(n.p,list.map(x=>x.o.x),k=>pick(n,list[k].i));
+}
+function pick(n,i){
+  const o=n.o[i];
+  if(o.g){E.removed.add(E.idx+':'+i);glitch(o.g,()=>choose(n));return}
+  if(n.quiz) recordQuiz(n.quiz,E.i,n.qt,!!o.ok);
+  if(o.r){setRes(E.res+o.r,o.r); sfx(o.r>0?'blip':'buzz')}
+  vnSay(compP(),o.re,advance);
+}
+function clue(n){
+  const d=$('#dlg'), c=CLIPS[n.clip]; WAIT=null;
+  d.innerHTML=`<span class="nameplate clue">음악 단서</span><p class="line prompt" style="font-family:var(--f-story);font-size:17px">${n.q}</p>
+    <div class="cluebar"><button class="btn" id="cPlay">▶ 다시 듣기</button><span>${c.title}</span></div>
+    <div class="choices">${orderOf(n).map((i,k)=>`<button class="choice" data-i="${i}"><span class="k">${k+1}</span><span>${n.o[i].x}</span></button>`).join('')}</div><div id="cEx"></div>`;
+  $('#cPlay').onclick=()=>playClip(n.clip); playClip(n.clip);
+  $$('.choice',d).forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, ok=!!n.o[i].ok;
+    recordQuiz(n.id,E.i,n.q.replace(/^케이지: “|”$/g,''),ok);
+    $$('.choice',d).forEach(x=>{x.disabled=true;if(n.o[+x.dataset.i].ok)x.classList.add('right')}); if(!ok) b.classList.add('wrong');
+    if(ok){setRes(E.res+10,10);sfx('blip')} else sfx('buzz');
+    $('#cEx').innerHTML=`<div class="explain"><b>${ok?'정답이에요!':'아쉬워요. 정답은 초록색 보기예요.'}</b> ${n.ex}</div><div class="box-acts" style="margin-top:10px"><button class="btn primary" id="go2">계속</button></div>`;
+    $('#go2').onclick=advance; $('#go2').focus({preventScroll:true});
+  });
+}
+function showDoc(n,cb){
+  S.docs[E.i]=1; save(); sfx('static'); WAIT=null;
+  openOverlay(`<div class="docpaper"><span class="wax">史料</span><span class="kind">역사 기록 · 사료</span><h3>${n.title}</h3><p class="src">${n.src}</p><p class="body">${n.x}</p><button class="btn" id="dOk">사료 보관함에 넣기</button></div>`,'bare');
+  $('#dOk').onclick=()=>{closeOverlay();cb()};
+}
+function gate(){
+  if(E.res>=60){ sfx('chime'); vnSay(null,`${E.era.short}의 공감도 ${E.res}! 마음이 통했어요.`,advance); return }
+  sfx('buzz'); WAIT=null;
+  $('#dlg').innerHTML=`<span class="nameplate">${E.era.short}<small>${E.era.lat}</small></span><p class="line say">…고맙지만, 아직은 그대를 잘 모르겠구려.</p>
+    <div class="explain"><b>공감도가 부족해요 (${E.res}/60).</b> ${E.era.short}이(가) 살았던 시대와 성격을 떠올리며 다시 대화해 보세요. 퀴즈 기록은 첫 번째 답만 남아요.</div>
+    <div class="box-acts"><button class="btn primary" id="again">처음부터 다시 대화하기</button></div>`;
+  $('#again').onclick=()=>startEra(E.i);
+}
+function glitch(key,back){
+  const g=GLITCH[key], e=E.era;
+  S.glitches++; S.energy-=20; let recharge=false; if(S.energy<=0){S.energy=60;recharge=true} save(); updateHud();
+  sfx('rewind'); if(g.clip) setTimeout(()=>playClip(g.clip),500);
+  stage.classList.add('shake'); setTimeout(()=>stage.classList.remove('shake'),700);
+  const gsrc=chImg(e.who,'sad');
+  openOverlay(`<p class="eyebrow" style="color:#ff8fae">타임라인 균열 발생</p><div class="frame">${gsrc?`<img src="${gsrc}" alt=""><svg class="itemov" viewBox="0 0 200 240" aria-hidden="true">${ITEMS[key]}</svg>`:portrait(e.who,key,e.cname)}</div><h2>${g.t}</h2><p>${g.x}</p>
+    <p class="hm">하모: “으악, 에너지가 새고 있어! 그 시대에 있던 것만 골라 줘!”</p>
+    <p class="cost">타임머신 에너지 −20${recharge?' · 에너지가 바닥나 카세트를 되감아 60까지 충전했어요':''}</p>
+    <button class="btn primary" id="gBack">시간을 되감고 다시 고르기</button>`,'glitch');
+  $('#gBack').onclick=()=>{closeOverlay();stopClip();back()};
+}
+function award(i){
+  S.crystals[i]=1; save(); updateHud(); sfx('chime'); WAIT=null;
+  const e=ERAS[i], all=S.crystals.every(Boolean), card=CARDS.find(c=>c.era===i&&!c.bonus), bonus=CARDS.find(c=>c.era===i&&c.bonus);
+  openOverlay(`<div style="--glow:${ERA_HEX[i]};display:grid;justify-items:center;gap:10px"><div class="gem">${gem(ERA_HEX[i],1,150)}</div>
+    <p class="eyebrow">하모니 크리스탈 ${S.crystals.filter(Boolean).length}/5</p><h2>${e.crystal} 획득!</h2>
+    <p class="muted">음악 도감에 <b style="color:var(--parch)">${card.name}</b> 카드와 보너스 카드 <b style="color:var(--parch)">${bonus.name}</b>이(가) 열렸어요.</p>
+    <div class="acts" style="justify-content:center"><button class="btn primary" id="aNext">${all?'음악이 돌아오는 순간 보기':'타임라인으로 돌아가기'}</button><button class="btn" id="aCodex">도감에서 카드 보기</button></div></div>`,'award');
+  $('#aNext').onclick=()=>{closeOverlay(); all?screenEnding():screenMap()};
+  $('#aCodex').onclick=()=>{openCodex(()=>{all?screenEnding():screenMap()})};
+}
+
+/* =========================================================
+   미니게임
+   ========================================================= */
+const GAMES={neume:gameNeume,counterpoint:gameCounterpoint,rhythm:gameRhythm,emotion:gameEmotion,silence:gameSilence};
+function gameShell(eyebrow,title,rule,body){
+  pageMode();
+  stage.innerHTML=`<section class="game"><header><p class="eyebrow">${eyebrow}</p><h2>${title}</h2></header><p class="rule">${rule}</p>${body}</section>`;
+}
+
+/* ① 중세 — 네우마 기록 퍼즐 */
+function gameNeume(done){
+  const R=[['C4','D4','F4','E4'],['D4','F4','G4','A4','G4'],['F4','G4','A4','G4','F4','D4']];
+  const P=['C4','D4','E4','F4','G4','A4'], SY={C4:['ut','도'],D4:['re','레'],E4:['mi','미'],F4:['fa','파'],G4:['sol','솔'],A4:['la','라']};
+  let r=0,cur=[],tries=0,marks=null;
+  const y=n=>150-P.indexOf(n)*14;
+  function staff(){
+    const tgt=R[r], w=590;
+    let s=`<svg class="staff" viewBox="0 0 ${w} 190" role="img" aria-label="네 줄 보표">`;
+    [150,122,94,66].forEach(yy=>s+=`<line x1="20" x2="${w-20}" y1="${yy}" y2="${yy}" stroke="#a0302a" stroke-width="1.6"/>`);
+    s+=`<text x="34" y="156" font-family="UnifrakturMaguntia,serif" font-size="26" fill="#2b2219">C</text><text x="22" y="182" font-size="11" fill="#6b5a45">ut=도</text>`;
+    tgt.forEach((n,k)=>{const x=80+k*80, have=cur[k];
+      if(have){const col=marks?(marks[k]?'#2f7d55':'#c4473a'):'#2b2219';s+=`<rect x="${x-10}" y="${y(have)-10}" width="20" height="20" fill="${col}"/>`;
+        s+=`<text x="${x}" y="30" text-anchor="middle" font-size="14" fill="#6b5a45" font-family="IM Fell English,serif" font-style="italic">${SY[have][0]}</text>`;}
+      else s+=`<rect x="${x-10}" y="40" width="20" height="120" fill="none" stroke="#c9b48c" stroke-dasharray="4 4" rx="4"/>`;
+      if(k===0&&!have) s+=`<text x="${x}" y="30" text-anchor="middle" font-size="12" fill="#a0302a">시작</text>`;
+    });
+    return s+'</svg>';
+  }
+  function draw(){
+    gameShell('미니게임 · 네우마 기록 퍼즐',`선율을 듣고 네 줄 위에 기록하기 <span class="round">라운드 ${r+1}/3</span>`,
+      '‘선율 듣기’로 힐데가르트의 노래를 듣고, 아래 음 버튼을 순서대로 눌러 네모난 네우마를 올려 주세요. 버튼을 누르면 그 음이 들려요. 첫 음은 힌트로 미리 놓여 있어요.',
+      `<div class="panel">${staff()}</div>
+       <div class="pitchpad">${P.map(n=>`<button data-n="${n}"><b>${SY[n][0]}</b><small>${SY[n][1]}</small></button>`).join('')}</div>
+       <div class="acts"><button class="btn primary" id="listen">▶ 선율 듣기</button><button class="btn" id="mine">내 기록 듣기</button><button class="btn" id="undo">하나 지우기</button><button class="btn" id="check" ${cur.length===R[r].length?'':'disabled'}>확인</button></div>
+       <p class="msg" id="msg"></p>`);
+    $$('.pitchpad button').forEach(b=>b.onclick=()=>{const n=b.dataset.n;playNotes('음 하나 — '+SY[n][0],'voice',[n],.6,.4);if(cur.length<R[r].length){cur.push(n);marks=null;draw()}});
+    $('#listen').onclick=()=>playNotes(`힐데가르트의 선율 ${r+1}`,'voice',R[r],.62);
+    $('#mine').onclick=()=>{if(cur.length)playNotes('내가 기록한 선율','voice',cur,.62)};
+    $('#undo').onclick=()=>{if(cur.length>1){cur.pop();marks=null;draw()}};
+    $('#check').onclick=check;
+  }
+  function check(){
+    const tgt=R[r]; marks=tgt.map((n,k)=>cur[k]===n);
+    if(marks.every(Boolean)){
+      recordGame('m-neume-'+r,0,`네우마 퍼즐 ${r+1}라운드`,tries===0); sfx('chime'); draw();
+      $('#msg').className='msg ok'; $('#msg').textContent=r<2?'정확해요! 다음 구절로 넘어가요.':'세 구절 모두 기록했어요!';
+      setTimeout(()=>{r++;tries=0;cur=r<3?[R[r][0]]:[];marks=null; if(r<3) draw(); else done()},1300);
+    } else {
+      tries++; sfx('buzz'); draw(); const bad=marks.filter(x=>!x).length;
+      $('#msg').className='msg bad'; $('#msg').textContent=`빨간 네우마 ${bad}개가 달라요. 다시 듣고 고쳐 보세요. (‘하나 지우기’로 뒤에서부터 지울 수 있어요)`;
+    }
+  }
+  cur=[R[0][0]]; draw();
+}
+
+/* ② 바로크 — 대위법 블록 맞추기 */
+function gameCounterpoint(done){
+  const R=[['C5','D5','E5','D5','C5'],['G4','C5','B4','A4','B4','C5']];
+  const LOCK=[{0:'C4',4:'C4'},{0:'G3',5:'C4'}];   // 첫 박·마지막 박은 바흐가 미리 적어 줌
+  const ROWS=['C4','B3','A3','G3','F3','E3','D3','C3'];
+  const KO={C:'도',D:'레',E:'미',F:'파',G:'솔',A:'라',B:'시'};
+  let r=0,low=[],tries=0,errBeats=new Set();
+  const fresh=()=>{low=[];Object.entries(LOCK[r]).forEach(([b,n])=>low[+b]=n)};
+  const locked=b=>b in LOCK[r];
+  const LET='CDEFGAB';
+  const info=(u,l)=>{const s=midi(u)-midi(l),mod=s%12;const num=(LET.indexOf(u[0])-LET.indexOf(l[0]))+7*(+u.slice(-1)-+l.slice(-1))+1;let simple=((num-1)%7)+1;if(simple===1&&num>1)simple=8;
+    const ok=[0,3,4,7,8,9].includes(mod);return{s,mod,simple,ok,perfect:mod===0||mod===7}};
+  function draw(msg,cls){
+    const up=R[r],n=up.length;
+    let g=`<div class="cp" style="--n:${n}"><div class="cp-row"><span>위 선율</span>${up.map(u=>`<div class="cp-up">${u.replace(/\d/,'')} ${KO[u[0]]}</div>`).join('')}</div>`;
+    ROWS.forEach(rw=>{g+=`<div class="cp-row"><span>${rw} ${KO[rw[0]]}</span>${up.map((u,b)=>`<button class="cp-cell ${low[b]===rw?'sel':''} ${locked(b)?'lock':''}" data-b="${b}" data-n="${rw}" ${locked(b)?'disabled':''} aria-label="${b+1}번째 박에 ${rw}">${low[b]===rw?rw.replace(/\d/,''):''}</button>`).join('')}</div>`});
+    g+=`<div class="cp-row"><span>어울림</span>${up.map((u,b)=>{if(!low[b])return'<div class="cp-int">?</div>';const x=info(u,low[b]);return`<div class="cp-int ${x.ok?'good':'bad'} ${errBeats.has(b)?'err':''}">${x.ok?'○ '+x.simple+'도':'✕ '+x.simple+'도'}</div>`}).join('')}</div></div>`;
+    const left=up.filter((_,b)=>!low[b]).length;
+    gameShell('미니게임 · 대위법 블록 맞추기',`바흐의 위 선율에 아래 선율 붙이기 <span class="round">라운드 ${r+1}/2</span>`,
+      '바흐가 첫 음과 마지막 음은 미리 적어 두었어요. 빈 박마다 아래 칸을 하나씩 눌러 음을 고르세요. 맨 아래 줄이 <b style="color:var(--ok)">○ 초록</b>이면 두 음이 잘 어울리는 것이고, <b style="color:var(--bad)">✕ 빨강</b>이면 부딪히는 소리예요. <b style="color:var(--parch)">모든 박을 초록으로 만들면 성공!</b> 막히면 ‘힌트’를 눌러 보세요.',
+      `<div class="panel cp-wrap">${g}</div><div class="acts"><button class="btn primary" id="hear">▶ 두 선율 함께 듣기</button><button class="btn" id="hint" ${left?'':'disabled'}>힌트</button><button class="btn" id="check" ${left?'disabled':''}>바흐에게 보여 주기</button><button class="btn" id="clear">다시 고르기</button></div><div id="msg" class="msg ${cls||''}">${msg||''}</div>`);
+    $$('.cp-cell').forEach(c=>c.onclick=()=>{const b=+c.dataset.b;if(locked(b))return;low[b]=c.dataset.n;errBeats.clear();play2('one',[b]);
+      const ok=info(up[b],low[b]).ok;draw(ok?'':`${b+1}번째 박이 빨간색이에요. 위 음과 부딪혀요. 다른 칸을 골라 보세요.`,ok?'':'bad')});
+    $('#hear').onclick=()=>play2('all');
+    $('#hint').onclick=()=>{const b=up.findIndex((u,k)=>!low[k]);if(b<0)return;const good=ROWS.filter(n=>{const x=info(up[b],n);return x.ok&&!x.perfect});low[b]=good[Math.floor(Math.random()*good.length)]||ROWS.find(n=>info(up[b],n).ok);play2('one',[b]);draw(`힌트: ${b+1}번째 박에 ${low[b].replace(/\d/,'')}(${KO[low[b][0]]}) 음을 놓았어요. 3도나 6도는 특히 부드럽게 어울려요.`)};
+    $('#clear').onclick=()=>{fresh();errBeats.clear();draw()};
+    $('#check').onclick=check;
+  }
+  function play2(mode,beats){
+    const up=R[r]; const idx=mode==='all'?up.map((_,b)=>b):beats;
+    playClip({title:mode==='all'?'바흐의 위 선율 + 내 아래 선율':'한 박 들어 보기',sub:'하프시코드 2성부',rev:.25,b:(t,bus)=>{const L=[];idx.forEach((b,k)=>{L.push([k,up[b],1]);if(low[b])L.push([k,low[b],1])});return ev('harpsi',bus,t,mode==='all'?.5:.6,L,.75)}});
+  }
+  function check(){
+    const up=R[r],errs=[];errBeats=new Set();
+    up.forEach((u,b)=>{const x=info(u,low[b]);if(!x.ok){errs.push(`${b+1}번째 박이 빨간색(${x.simple}도)이에요. 서로 부딪히는 소리라서 다른 음으로 바꿔야 해요.`);errBeats.add(b)}});
+    /* 병행 5도·8도는 막지 않고, 성공했을 때 바흐의 조언으로만 알려 줌 */
+    let tip='';
+    for(let b=1;b<up.length;b++){const p=info(up[b-1],low[b-1]),c=info(up[b],low[b]);
+      const du=Math.sign(midi(up[b])-midi(up[b-1])),dl=Math.sign(midi(low[b])-midi(low[b-1]));
+      if(p.perfect&&c.perfect&&p.mod===c.mod&&du!==0&&du===dl){tip=` (바흐의 조언: ${b}→${b+1}번째 박처럼 두 선율이 ${c.mod===7?'5':'8'}도 간격 그대로 나란히 움직이면 한 목소리처럼 들려요. 다음엔 3도나 6도를 섞어 보시오.)`;break}}
+    if(!errs.length){
+      recordGame('b-cp-'+r,1,`대위법 ${r+1}라운드`,tries===0); sfx('chime'); play2('all');
+      draw((r===0?'바흐: “훌륭하오! 두 목소리가 따로 걸으면서도 함께 노래하는군.”':'바흐: “완벽한 대위법이오! 이걸로 쾨텐에서 쓸 곡의 실마리가 풀렸소.”')+tip,'ok');
+      $('#check').disabled=true; $('#hint').disabled=true;
+      const nx=document.createElement('button');nx.className='btn primary';nx.textContent=r===0?'다음 라운드':'계속';$('#msg').after(nx);
+      nx.onclick=()=>{r++;tries=0;errBeats.clear();if(r<2){fresh();draw()}else done()};
+    } else {tries++;sfx('buzz');draw(`<ul class="errs">${errs.map(e=>`<li>${e}</li>`).join('')}</ul>`,'bad')}
+  }
+  fresh(); draw();
+}
+
+/* ③ 고전 — 음소거 감상 (운명 리듬) */
+function gameRhythm(done){
+  stopClip();
+  let presses=[],downAt=0,tries=0,ready=false,isDown=false,timers=[];
+  gameShell('미니게임 · 음소거 감상','운명의 네 음을 진동으로 느끼기',
+    '이 게임에서는 소리가 나지 않아요. 베토벤처럼 <b style="color:var(--parch)">진동</b>만 보고 리듬을 느껴 보세요. ‘진동 보기’를 누른 뒤, 같은 리듬으로 큰 버튼을 눌러요. 누르고 있는 동안이 소리의 길이예요.',
+    `<span class="mute-badge"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7h4l5-4v14l-5-4H3z" fill="currentColor"/><path d="M14 7l5 6M19 7l-5 6" stroke="currentColor" stroke-width="2"/></svg>소리 꺼짐 — 진동으로만 느끼기</span>
+     <div class="panel" style="display:grid;gap:14px"><div class="vib" id="vib"><div class="ring"></div><div class="ring r2"></div><div class="core"></div></div>
+     <div class="notation" aria-label="짧게 짧게 짧게 길게"><span>빠</span><i style="width:22px"></i><span>빠</span><i style="width:22px"></i><span>빠</span><i style="width:22px"></i><span>빰~</span><i style="width:96px;background:var(--brass-hi)"></i></div>
+     <div class="acts" style="justify-content:center"><button class="btn primary" id="watch">진동 보기</button></div>
+     <button class="tap" id="tap" disabled>여기를 눌러 두드리기<br><small>스페이스바를 눌러도 돼요</small></button>
+     <div class="tl" id="tl"><span>위: 정답 리듬 · 아래: 내 리듬</span></div></div>
+     <p class="msg" id="msg">먼저 ‘진동 보기’를 눌러 주세요.</p>`);
+  const vib=$('#vib'),tap=$('#tap'),tl=$('#tl'),msg=$('#msg');
+  const PAT=[[0,190],[300,190],[600,190],[900,1300]];
+  function watch(){ready=false;tap.disabled=true;presses=[];drawTl();timers.forEach(clearTimeout);timers=[];msg.className='msg';msg.textContent='진동을 느껴 보세요…';
+    [0,2600].forEach(off=>PAT.forEach(([s,l])=>{timers.push(setTimeout(()=>{vib.classList.add('on');stage.classList.add('shake');if(navigator.vibrate)try{navigator.vibrate(l)}catch(e){}},off+s));timers.push(setTimeout(()=>{vib.classList.remove('on');stage.classList.remove('shake')},off+s+l))}));
+    timers.push(setTimeout(()=>{ready=true;tap.disabled=false;tap.focus();msg.textContent='이제 똑같이 두드려 보세요! 짧게 · 짧게 · 짧게 · 길~게'},5000));}
+  function drawTl(){const span=3200;let h='<span>위: 정답 리듬 · 아래: 내 리듬</span>';PAT.forEach(([s,l])=>h+=`<i class="t" style="left:${s/span*100}%;width:${l/span*100}%"></i>`);
+    if(presses.length){const s0=presses[0].s;presses.forEach(p=>h+=`<i class="p" style="left:${Math.min(98,(p.s-s0)/span*100)}%;width:${Math.max(1,p.d/span*100)}%"></i>`)}tl.innerHTML=h}
+  function down(){if(!ready||isDown)return;isDown=true;downAt=performance.now();tap.classList.add('down');vib.classList.add('on')}
+  function up(){if(!isDown)return;isDown=false;tap.classList.remove('down');vib.classList.remove('on');presses.push({s:downAt,d:performance.now()-downAt});drawTl();if(presses.length===4)judge()}
+  function judge(){
+    ready=false;tap.disabled=true;const d=presses.map(p=>p.d),s=Math.max(d[0],d[1],d[2]);
+    const g=[presses[1].s-presses[0].s,presses[2].s-presses[1].s];
+    const ok=s<480&&d[3]>=Math.max(550,s*2)&&Math.max(...g)/Math.min(...g)<2.6&&presses[3].s-presses[2].s<1600;
+    if(ok){recordGame('c-rhythm',2,'운명 리듬 두드리기',tries===0);sfx('chime');
+      msg.className='msg ok';msg.innerHTML='완벽해요! 베토벤의 머릿속 교향곡이 깨어납니다. <b>이제 소리가 돌아와요.</b>';
+      setTimeout(()=>playClip('beethoven5'),600);
+      const b=document.createElement('button');b.className='btn primary';b.textContent='계속';msg.after(b);b.onclick=()=>{cleanup();done()};b.focus();
+    } else {tries++;sfx('buzz');msg.className='msg bad';
+      msg.textContent=d[3]<Math.max(550,s*2)?'마지막 음을 더 길~게 꾹 눌러 보세요. 앞의 세 번은 짧게 톡톡톡!':s>=480?'앞의 세 번은 더 짧게 톡, 톡, 톡 눌러 보세요.':'세 번을 같은 간격으로 눌러 보세요.';
+      setTimeout(()=>{presses=[];drawTl();ready=true;tap.disabled=false;tap.focus()},1600)}
+  }
+  const kd=e=>{if(e.code==='Space'&&ready){e.preventDefault();if(!e.repeat)down()}};
+  const ku=e=>{if(e.code==='Space'&&isDown){e.preventDefault();up()}};
+  function cleanup(){window.removeEventListener('keydown',kd);window.removeEventListener('keyup',ku);timers.forEach(clearTimeout);stage.classList.remove('shake')}
+  window.addEventListener('keydown',kd);window.addEventListener('keyup',ku);
+  tap.addEventListener('pointerdown',e=>{e.preventDefault();try{tap.setPointerCapture(e.pointerId)}catch(_){}down()});
+  tap.addEventListener('pointerup',up);tap.addEventListener('pointercancel',up);
+  $('#watch').onclick=watch; drawTl();
+}
+
+/* ④ 낭만 — 감정 매칭 감상 */
+function gameEmotion(done){
+  const EM=['분노와 격정 — 폭풍처럼 몰아친다','평화로움 — 잔잔한 자장가 같다','장난스러움 — 빙글빙글 귀엽다','지루함 — 아무 변화가 없다'];
+  const Q=[
+    {id:'r-emo1',clip:'revolutionary',q:'첫 번째 곡을 들어 보세요. 이 음악에 담긴 감정은?',qt:'혁명 에튀드에 담긴 감정',o:EM,a:0,ex:'『혁명 에튀드』(Op.10-12). 1831년 러시아군에게 바르샤바가 함락되었다는 소식을 들은 무렵에 썼다고 알려져 있어요. 왼손의 빠른 하행 음형이 폭풍처럼 몰아쳐요.'},
+    {id:'r-emo2',clip:'waltz',q:'두 번째 곡이에요. 이 음악에 담긴 감정은?',qt:'강아지 왈츠에 담긴 감정',o:EM,a:2,ex:'『강아지 왈츠』(Op.64-1). 조르주 상드의 강아지가 제 꼬리를 쫓아 빙글빙글 도는 모습에서 영감을 받았다고 전해져요. 짧아서 ‘1분 왈츠’라고도 불러요.'},
+    {id:'r-emo3',clip:'waltz',q:'왈츠의 반주는 ‘쿵-짝-짝’을 되풀이해요. 왈츠는 몇 박자 춤곡일까요?',qt:'왈츠의 박자',o:['2박자','3박자','4박자'],a:1,ex:'왈츠는 <b>3박자</b> 춤곡이에요. 첫 박의 낮은 음 ‘쿵’ 뒤에 화음 ‘짝, 짝’이 이어져요. 쇼팽이 사랑한 폴란드 춤곡 마주르카도 3박자랍니다.'}
+  ];
+  let k=0;
+  function draw(){
+    const q=Q[k];
+    gameShell('미니게임 · 감정 매칭 감상',`쇼팽의 마음 읽기 <span class="round">${k+1}/3</span>`,'음악을 끝까지 들어 보고, 음악이 표현하는 것에 가장 잘 맞는 보기를 골라 주세요. 틀리면 다시 듣고 고를 수 있어요.',
+      `<div class="panel qcard"><p class="line" style="font-size:18px;min-height:0">${q.q}</p><div class="acts"><button class="btn primary" id="play">▶ ${CLIPS[q.clip].title} 듣기</button></div>
+       <div class="opts">${(q.ord=q.ord||shuffle(q.o.map((_,i)=>i))).map(i=>`<button class="opt" data-i="${i}">${q.o[i]}</button>`).join('')}</div><div id="ex"></div></div>`);
+    $('#play').onclick=()=>playClip(q.clip); if(k<2) playClip(q.clip);
+    $$('.opt').forEach(b=>b.onclick=()=>{const i=+b.dataset.i,ok=i===q.a;recordQuiz(q.id,3,q.qt,ok);
+      if(ok){sfx('chime');$$('.opt').forEach(x=>x.disabled=true);b.classList.add('right');
+        $('#ex').innerHTML=`<div class="explain"><b>정답!</b> ${q.ex}</div><div class="acts" style="margin-top:10px"><button class="btn primary" id="nx">${k<2?'다음 곡':'계속'}</button></div>`;
+        $('#nx').onclick=()=>{k++;if(k<3)draw();else{stopClip();done()}};$('#nx').focus();
+      } else {sfx('buzz');b.classList.add('wrong');b.disabled=true;$('#ex').innerHTML='<p class="msg bad">음… 다시 들어 볼까요? 빠르기와 셈여림, 음이 움직이는 모양을 떠올려 보세요.</p>'}});
+  }
+  draw();
+}
+
+/* ⑤ 현대 — 4분 33초의 비밀 */
+function gameSilence(done){
+  let failed=0,amb=true,t0=0,iv=null,armed=false;
+  const total=()=>opts.silence==='full'?273:33;
+  function setup(extra){
+    stopClip(); const full=opts.silence==='full';
+    gameShell('미니게임 · 4분 33초의 비밀','TACET — 아무것도 누르지 말고 들어 보기',
+      `${total()===273?'4분 33초':'33초'} 동안 키보드와 마우스(화면)를 전혀 건드리지 마세요. 그 시간 동안 들리는 모든 소리가 이 곡의 연주예요. 1952년 초연 때는 1악장에 바람이, 2악장에 빗방울이, 3악장에 관객의 웅성거림이 들렸다고 해요.`,
+      `${extra||''}<div class="panel" style="display:grid;gap:12px">
+        <div class="acts"><span class="muted">길이</span><div class="seg" role="group" aria-label="길이 선택"><button id="sShort" aria-pressed="${!full}">수업용 33초</button><button id="sFull" aria-pressed="${full}">원곡 4분 33초</button></div></div>
+        <div class="chips"><label><input type="checkbox" id="amb" ${amb?'checked':''}> 1952년 숲속 공연장 소리 함께 듣기 (헤드폰 권장)</label></div>
+        <p class="muted" style="margin:0">끄면 지금 내 주변(교실, 방)의 실제 소리를 듣게 돼요. 케이지가 원래 바랐던 방식이에요.</p>
+        <div class="acts"><button class="btn primary" id="start">연주 시작 (그다음엔 손을 떼세요)</button></div></div>`);
+    $('#sShort').onclick=()=>{opts.silence='short';store.set(OPT_KEY,opts);setup(extra)};
+    $('#sFull').onclick=()=>{opts.silence='full';store.set(OPT_KEY,opts);setup(extra)};
+    $('#amb').onchange=e=>amb=e.target.checked;
+    $('#start').onclick=start;
+  }
+  function start(){
+    const T=total(), mv=[30,143,100].map(x=>x/273*T);
+    stage.innerHTML=`<section class="game" style="align-content:center;min-height:100%"><p class="eyebrow" style="text-align:center">John Cage · 4′33″ · 연주 중</p>
+      <div class="timer" id="tm">0:00</div><p class="cue" id="cue"></p>
+      <div class="mvts" style="--cols:${mv.map(m=>m.toFixed(2)+'fr').join(' ')}">${['I','II','III'].map(x=>`<div><b>${x}</b>TACET<span class="bar"></span></div>`).join('')}</div>
+      <p class="muted" style="text-align:center;margin:0">아무 키나 누르거나 화면을 누르면 연주가 멈춰요.</p></section>`;
+    let mode=''; if(amb){playClip('ambient')}
+    t0=performance.now(); setTimeout(()=>{armed=true},400);
+    iv=setInterval(()=>{const el=(performance.now()-t0)/1000;
+      const m=el<mv[0]?0:el<mv[0]+mv[1]?1:2; const left=Math.max(0,T-el);
+      $('#tm').textContent=`${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')}`;
+      $$('.mvts div').forEach((d,i)=>{d.classList.toggle('now',i===m);const st=mv.slice(0,i).reduce((a,b)=>a+b,0);d.querySelector('.bar').style.width=clamp((el-st)/mv[i]*100,0,100)+'%'});
+      const md=['wind','rain','crowd'][m]; if(md!==mode){mode=md;if(A.cur&&A.cur.ctl)A.cur.ctl.mode=md;
+        $('#cue').textContent=amb?['바람이 나뭇잎을 스친다…','빗방울이 지붕을 두드린다…','관객들이 웅성거리기 시작한다…'][m]:['지금 무슨 소리가 들리나요?','더 작은 소리도 찾아보세요…','내 숨소리도 들리나요?'][m]}
+      if(el>=T) success();},200);
+    window.addEventListener('keydown',fail,true); window.addEventListener('pointerdown',fail,true);
+  }
+  function cleanup(){clearInterval(iv);armed=false;window.removeEventListener('keydown',fail,true);window.removeEventListener('pointerdown',fail,true);stopClip()}
+  function fail(e){ if(!armed) return; e.preventDefault(); e.stopPropagation(); cleanup(); failed++; sfx('buzz');
+    setup(`<div class="explain" style="background:#2a1720;color:#ffd0c8"><b style="color:#ff9d8f">앗, 손이 움직였어요!</b> 케이지라면 “방금 그 소리도 음악이야!”라고 웃었을 거예요. 그래도 이번엔 끝까지 귀 기울여 볼까요?</div>`) }
+  function success(){
+    cleanup(); recordGame('x-silence',4,'4분 33초 끝까지 듣기',failed===0); sfx('chime');
+    const S2=['바람 소리','빗소리','사람들 웅성거림','내 숨소리','친구 목소리','컴퓨터·에어컨 소리','바깥 자동차 소리','새소리','내 심장 소리','시계 소리'];
+    gameShell('미니게임 · 4분 33초의 비밀','연주 완료! 무엇이 들렸나요?','정답은 없어요. 들렸던 소리를 모두 골라 케이지에게 알려 주세요.',
+      `<div class="panel" style="display:grid;gap:14px"><div class="chips">${S2.map((s,i)=>`<label><input type="checkbox" id="snd${i}"> ${s}</label>`).join('')}</div>
+       <div class="acts"><button class="btn primary" id="tell">케이지에게 알려 주기</button></div><div id="hint"></div></div>`);
+    $('#tell').onclick=()=>{const n=$$('.chips input:checked').length;
+      $('#hint').innerHTML=`<div class="explain"><b>힌트 획득: “소음도 음악이 된다.”</b> 여러분은 ${n?n+'가지':'여러 가지'} 소리를 들었어요. 『4분 33초』는 연주자가 소리를 내지 않아도, 듣는 사람이 귀를 기울이는 순간 주변의 소리가 음악이 된다는 것을 보여 줘요.</div><div class="acts" style="margin-top:10px"><button class="btn primary" id="fin">계속</button></div>`;
+      $('#tell').disabled=true; $('#fin').onclick=done; $('#fin').focus()};
+  }
+  setup();
+}
+
+/* =========================================================
+   엔딩 · 수료증 · 도감 · 선생님 페이지
+   ========================================================= */
+function screenEnding(){
+  pageMode(); setEra('map');
+  if(!S.finished){S.finished=Date.now();save()}
+  if(!S.histSaved){const h=store.get(HIST_KEY,[]);const st=stats();h.unshift({name:S.name,cls:S.cls,date:new Date(S.finished).toLocaleString('ko-KR'),pct:st.pct,q:`${st.qOk}/${st.qN}`,g:`${st.gOk}/${st.gN}`,glitch:S.glitches,min:st.min});store.set(HIST_KEY,h.slice(0,200));S.histSaved=true;save()}
+  const tracks=[['최애 아이돌 신곡','K-POP','#de86ad'],['보스전 BGM','게임 OST','#5f92e3'],['공부할 때 듣는 로파이','유튜브 음악','#86d8d3'],['졸업식 합창곡','학교 음악','#e8c35c']];
+  stage.innerHTML=`<section class="ending"><p class="eyebrow">에필로그</p><h2>음악이 돌아왔다!</h2>
+    <div style="display:flex;gap:8px">${ERAS.map((e,i)=>`<span style="filter:drop-shadow(0 0 10px ${ERA_HEX[i]})">${gem(ERA_HEX[i],1,44)}</span>`).join('')}</div>
+    <div class="guide" style="text-align:left"><div class="mini">${pic('yun','smile')}</div><p class="bubble" style="border-color:#c9576e"><b style="color:#f3a3b4">윤서</b>${esc(S.name)}! 들려? 노래가 다시 나와! 약속대로 신곡 제일 먼저 같이 듣자!</p></div>
+    <p class="lead" style="margin:0">다섯 개의 하모니 크리스탈이 카세트 안에서 하나의 화음으로 울렸다. 단선율 성가에서 시작된 음악의 뿌리가 대위법, 형식, 감정, 그리고 ‘듣는 법’의 혁명을 지나 지금 우리의 노래까지 이어진다.</p>
+    <div class="playlist">${tracks.map(([a,b,c])=>`<div class="track gone"><i style="background:${c}"></i><div><b>${a}</b><small>${b}</small></div></div>`).join('')}</div>
+    <div class="acts" style="justify-content:center"><button class="btn primary" id="cert">수료증 받기</button><button class="btn" id="again">다시 듣기</button></div></section>`;
+  const back=()=>$$('.ending .track').forEach((el,i)=>setTimeout(()=>el.classList.remove('gone'),400+i*700));
+  playClip('pop'); back(); sfx('chime');
+  $('#again').onclick=()=>{playClip('pop');$$('.ending .track').forEach(el=>el.classList.add('gone'));back()};
+  $('#cert').onclick=screenCert;
+}
+function stats(){
+  const q=Object.values(S.quiz),g=Object.values(S.games),qOk=q.filter(x=>x.ok).length,gOk=g.filter(x=>x.ok).length;
+  return{q,g,qOk,gOk,qN:q.length,gN:g.length,pct:q.length?Math.round(qOk/q.length*100):0,min:Math.max(1,Math.round(((S.finished||Date.now())-S.started)/60000))};
+}
+function screenCert(){
+  stopClip(); pageMode(); E=null; setEra('map');
+  const st=stats(), n=S.crystals.filter(Boolean).length, fin=!!S.finished;
+  const date=new Date(S.finished||Date.now()).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  const serial='TH-'+String(Math.abs([...(S.name+S.started)].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7))%100000).padStart(5,'0');
+  const rows=ERAS.map((e,i)=>{const q=st.q.filter(x=>x.era===i),g=st.g.filter(x=>x.era===i);return`<tr><td>${e.name} · ${e.short}</td><td class="n">${q.filter(x=>x.ok).length}/${q.length}</td><td class="n">${g.filter(x=>x.ok).length}/${g.length}</td><td>${S.crystals[i]?'획득':'—'}</td></tr>`}).join('');
+  stage.innerHTML=`<article class="cert" id="certDoc">
+    <div class="cert-top"><span>${fin?'수료증':'탐험 기록 · 진행 중'}</span><span>No. ${serial}</span></div>
+    <h2>타임 하모니 서양음악사 탐험 ${fin?'수료증':'중간 기록'}</h2>
+    <p class="cert-name">${esc(S.name||'이름 없음')}<small>${esc(S.cls)}</small></p>
+    <p>${fin?'위 학생은 중세부터 현대까지 서양음악사의 다섯 시대를 여행하며 힐데가르트 폰 빙엔, 바흐, 베토벤, 쇼팽, 존 케이지의 고민을 함께 나누고 사라진 멜로디를 되찾았기에 이 증서를 드립니다.':`지금까지 ${n}개 시대를 여행했어요. 모든 크리스탈을 모으면 수료증이 완성돼요.`}</p>
+    <dl class="stats"><div><dt>음악사 퀴즈 정답률</dt><dd>${st.pct}%<small>${st.qOk}/${st.qN}</small></dd></div><div><dt>미니게임 한 번에 성공</dt><dd>${st.gOk}<small>/${st.gN}</small></dd></div><div><dt>하모니 크리스탈</dt><dd>${n}<small>/5</small></dd></div><div><dt>수집한 사료</dt><dd>${S.docs.filter(Boolean).length}<small>/5</small></dd></div></dl>
+    <div class="cert-cards">${ERAS.map((e,i)=>{const c=CARDS.find(x=>x.era===i&&!x.bonus);return`<div class="${S.crystals[i]?'':'off'}">${gem(ERA_HEX[i],S.crystals[i],28)}<b>${c.name.split(' ').slice(-1)[0]}</b><span>${c.works[0]}</span></div>`}).join('')}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>시대</th><th>퀴즈 정답</th><th>미니게임 첫 성공</th><th>크리스탈</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="cert-foot"><span>${date}<br>플레이 시간 약 ${st.min}분 · 타임라인 균열 ${S.glitches}회</span><span class="seal">타임<br>하모니</span></div>
+  </article>
+  <div class="after no-print">
+    <div class="acts"><button class="btn primary" id="copy">결과를 글로 복사</button>${window.self===window.top?'<button class="btn" id="print">인쇄하기</button>':''}<button class="btn" id="codex">음악 도감</button>${fin?'':'<button class="btn" id="map">타임라인으로</button>'}<button class="btn" id="home">처음 화면</button></div>
+    <p class="msg" id="cmsg"></p>
+    <details><summary>문항별 결과 보기 (선생님 확인용)</summary><div class="tbl-wrap"><table class="dark-table"><thead><tr><th>시대</th><th>문항</th><th>첫 답</th></tr></thead><tbody>
+      ${st.q.map(x=>`<tr><td>${ERAS[x.era].name}</td><td>${esc(x.q)}</td><td class="ox ${x.ok?'o':'x'}">${x.ok?'O':'X'}</td></tr>`).join('')||'<tr><td colspan="3">아직 기록이 없어요.</td></tr>'}
+      ${st.g.map(x=>`<tr><td>${ERAS[x.era].name}</td><td>[미니게임] ${esc(x.label)}</td><td class="ox ${x.ok?'o':'x'}">${x.ok?'한 번에':'재도전'}</td></tr>`).join('')}
+    </tbody></table></div></details>
+  </div>`;
+  const text=`[타임 하모니 ${fin?'수료':'중간 기록'}] ${S.name}${S.cls?' ('+S.cls+')':''}\n날짜: ${date} / 플레이 약 ${st.min}분\n음악사 퀴즈 정답률: ${st.pct}% (${st.qOk}/${st.qN})\n미니게임 한 번에 성공: ${st.gOk}/${st.gN}\n하모니 크리스탈: ${n}/5 / 사료: ${S.docs.filter(Boolean).length}/5 / 타임라인 균열: ${S.glitches}회\n획득 카드: ${CARDS.filter(c=>S.crystals[c.era]).map(c=>c.name).join(', ')||'없음'}\n확인번호: ${serial}`;
+  $('#copy').onclick=()=>{const m=$('#cmsg');try{navigator.clipboard.writeText(text).then(()=>{m.className='msg ok';m.textContent='복사했어요. 선생님께 제출할 곳에 붙여 넣으세요.'},()=>fallback())}catch(e){fallback()}
+    function fallback(){m.className='msg';m.innerHTML=`<textarea readonly style="width:100%;height:9em;background:var(--night);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px">${esc(text)}</textarea>`;const ta=m.querySelector('textarea');ta.focus();ta.select()}};
+  if($('#print')) $('#print').onclick=()=>window.print();
+  $('#codex').onclick=()=>openCodex(); $('#home').onclick=screenTitle; if(!fin) $('#map').onclick=screenMap;
+}
+function openCodex(after){
+  overlay.dataset.dismiss='1';
+  const docs=[];ERAS.forEach((e,i)=>e.script.forEach(n=>{if(n.t==='doc')docs.push({i,...n})}));
+  const html=`<div class="acts" style="justify-content:space-between"><div><p class="eyebrow">음악 도감</p><h2 style="font-size:28px">작곡가 카드 ${CARDS.filter(c=>S.crystals[c.era]).length}/10 · 사료 ${S.docs.filter(Boolean).length}/5</h2></div><button class="close-x" id="cx">닫기</button></div>
+    <p class="muted" style="margin:0">시대를 마치면 대표 작곡가와 보너스 작곡가 카드가 열려요. ‘듣기’는 audio 폴더에 녹음 음원이 있으면 그것을, 없으면 게임이 직접 만든 짧은 편곡을 들려줘요.</p>
+    <div class="codex-grid">${CARDS.map((c,k)=>{const open=S.crystals[c.era];if(!open)return`<div class="card locked"><h3>???</h3><p>${ERAS[c.era].name} 시대를 마치면 열려요</p></div>`;
+      return`<div class="card ${c.bonus?'bonus':''}" style="--era:${ERA_HEX[c.era]}"><span class="era">${ERAS[c.era].name}${c.bonus?' · 보너스':''}</span><h3>${c.name}</h3><span class="life">${c.orig} · ${c.life}</span><p>${c.about}</p><ul>${c.works.map(w=>`<li>${w}</li>`).join('')}</ul>
+      <div class="acts">${c.clip?`<button class="btn" data-k="${k}">▶ 듣기</button>`:''}<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(c.yt)}" target="_blank" rel="noopener">유튜브에서 찾아 듣기 ↗</a></div></div>`}).join('')}</div>
+    <h3 style="font-size:22px">사료 보관함</h3>
+    <div class="codex-grid">${docs.map(d=>S.docs[d.i]?`<div class="card doc"><span class="era" style="--era:${ERA_HEX[d.i]}">${ERAS[d.i].name} · 사료</span><h3>${d.title}</h3><span class="life">${d.src}</span><p>${d.x}</p></div>`:`<div class="card locked"><h3>봉인된 사료</h3><p>${ERAS[d.i].name} 시대에서 찾을 수 있어요</p></div>`).join('')}</div>`;
+  openOverlay(html);
+  $$('.card [data-k]').forEach(b=>b.onclick=()=>{const c=CARDS[+b.dataset.k];playClip(c.clip,c.clip==='ambient'?{limit:12}:{limit:60})});
+  $('#cx').onclick=()=>{closeOverlay();if(typeof after==='function')after()};
+}
+function screenTeacher(){
+  stopClip(); pageMode(); setEra('map');
+  const h=store.get(HIST_KEY,[]);
+  const items=[];ERAS.forEach((e,i)=>e.script.forEach(n=>{if(n.t==='clue')items.push([e.name,n.q.replace(/^케이지: “|”$/g,''),n.o.find(o=>o.ok).x]);if(n.t==='c'&&n.quiz)items.push([e.name,n.qt,n.o.find(o=>o.ok).x])}));
+  items.push(['낭만','혁명 에튀드에 담긴 감정','분노와 격정'],['낭만','강아지 왈츠에 담긴 감정','장난스러움'],['낭만','왈츠의 박자','3박자']);
+  stage.innerHTML=`<section class="teacher"><div><p class="eyebrow">선생님 페이지</p><h2 style="font-size:32px">수업에서 이렇게 써 보세요</h2></div>
+    <section><h3>수업 흐름 (약 45분)</h3><ol>
+      <li>도입 7분: 프롤로그(비주얼 노벨)를 함께 보며 ‘음악이 사라진다면?’ 질문 던지기</li>
+      <li>전개 30분: 학생 개별 플레이. 시대마다 연대 표지 → 대화 → 사료 → 음악 단서 → 미니게임 → 크리스탈 순서로 진행돼요. 헤드폰이나 이어폰을 꼭 준비해 주세요.</li>
+      <li>정리 8분: 수료증 화면의 ‘결과를 글로 복사’로 제출받고, 도감의 사료 보관함을 함께 읽기</li></ol></section>
+    <section><h3>음원 파일 상태</h3><p class="muted" style="margin:0">이 HTML 파일 옆 <code>audio</code> 폴더에 아래 이름의 mp3를 넣으면 실제 녹음이 재생돼요. 없으면 게임이 만든 합성음을 써요. (온라인 버전에는 파일이 없어 합성음만 나와요)</p>
+      <div class="tbl-wrap"><table class="dark-table"><thead><tr><th>파일 이름</th><th>들어갈 음악</th><th>상태</th></tr></thead><tbody>${Object.entries(AF).map(([id,[f,d]])=>`<tr><td><code>${f}.mp3</code></td><td>${d}</td><td class="ox ${AOK[id]?'o':'x'}">${AOK[id]?'연결됨':'합성음 사용'}</td></tr>`).join('')}</tbody></table></div></section>
+    <section><h3>그림 파일 상태</h3><p class="muted" style="margin:0"><code>images</code> 폴더에 아래 이름으로 그림을 넣으면 기본 그림 대신 나와요. 배경은 jpg·png, 인물은 배경이 투명한 png. 표정 그림이 없으면 <code>normal</code> 그림을 대신 써요.</p>
+      <div class="tbl-wrap"><table class="dark-table"><thead><tr><th>파일 이름</th><th>내용</th><th>상태</th></tr></thead><tbody>
+      ${Object.entries(BG_KEYS).map(([k,d])=>`<tr><td><code>bg_${k}.jpg</code></td><td>배경 · ${d}</td><td class="ox ${IOK['bg_'+k]?'o':'x'}">${IOK['bg_'+k]?'연결됨':'기본 그림'}</td></tr>`).join('')}
+      ${Object.entries(CH_KEYS).map(([c,es])=>es.map(e=>`<tr><td><code>ch_${c}_${e}.png</code></td><td>인물 · ${({yun:'윤서',harmo:'하모',hildegard:'힐데가르트',bach:'바흐',beethoven:'베토벤',chopin:'쇼팽',cage:'케이지'})[c]} (${e})</td><td class="ox ${IOK[`ch_${c}_${e}`]?'o':'x'}">${IOK[`ch_${c}_${e}`]?'연결됨':e==='normal'?'기본 그림':'normal로 대체'}</td></tr>`).join('')).join('')}
+      </tbody></table></div></section>
+    <section><h3>4분 33초 미션 길이</h3>
+      <div class="seg" role="group" aria-label="4분 33초 길이"><button id="oS" aria-pressed="${opts.silence!=='full'}">수업용 33초</button><button id="oF" aria-pressed="${opts.silence==='full'}">원곡 4분 33초</button></div></section>
+    <section><h3>평가 기록 방식</h3><ul>
+      <li><b>음악사 퀴즈 정답률</b>: 음악 단서 5문항 + 대화 속 지식 문항 5개 + 쇼팽 감상 3문항, 모두 <b>첫 번째 답</b>만 기록해요 (총 13문항).</li>
+      <li><b>미니게임 한 번에 성공</b>: 네우마 3라운드, 대위법 2라운드, 운명 리듬, 4분 33초 — 총 7개.</li>
+      <li>기록은 각 학생 기기의 브라우저에만 저장돼요. 결과는 수료증 화면에서 글로 복사해 제출받아 주세요.</li></ul></section>
+    <section><h3>문항과 정답</h3><div class="tbl-wrap"><table class="dark-table"><thead><tr><th>시대</th><th>문항</th><th>정답</th></tr></thead><tbody>${items.map(r=>`<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div></section>
+    <section><h3>이 기기의 수료 기록 (${h.length}건)</h3>${h.length?`<div class="tbl-wrap"><table class="dark-table"><thead><tr><th>이름</th><th>학번·반</th><th>수료 일시</th><th>퀴즈</th><th>미니게임</th><th>균열</th><th>시간</th></tr></thead><tbody>${h.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td>${esc(r.date)}</td><td class="n">${r.pct}% (${r.q})</td><td class="n">${r.g}</td><td class="n">${r.glitch}</td><td class="n">${r.min}분</td></tr>`).join('')}</tbody></table></div><div class="acts"><button class="btn" id="clr">기록 지우기</button></div>`:'<p class="muted" style="margin:0">아직 이 기기에서 수료한 기록이 없어요.</p>'}</section>
+    <div class="acts"><button class="btn primary" id="back">처음 화면으로</button></div></section>`;
+  $('#oS').onclick=()=>{opts.silence='short';store.set(OPT_KEY,opts);screenTeacher()};
+  $('#oF').onclick=()=>{opts.silence='full';store.set(OPT_KEY,opts);screenTeacher()};
+  if($('#clr')) $('#clr').onclick=()=>confirmBox('이 기기의 수료 기록을 모두 지울까요?','지우기','취소',()=>{store.del(HIST_KEY);screenTeacher()});
+  $('#back').onclick=screenTitle;
+}
+
+/* 키보드: Enter·Space로 대사 넘기기, 숫자키로 보기 고르기, Esc로 닫기 */
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!overlay.hidden&&overlay.dataset.dismiss==='1'){const c=$('#cx');if(c)c.click();return}
+  if(!overlay.hidden) return;
+  const tag=document.activeElement.tagName;
+  if(/^[1-9]$/.test(e.key)&&!/INPUT|TEXTAREA/.test(tag)){const b=$$('#dlg .choice:not([disabled])')[+e.key-1];if(b){e.preventDefault();b.click();return}}
+  if((e.key==='Enter'||e.key===' ')&&stage.classList.contains('vn-mode')&&(WAIT||typing)&&!(tag==='BUTTON'&&document.activeElement.id!=='go')){e.preventDefault();vnAdvance()}
+});
+
+probeAudio(); probeImages(); updateHud(); setPlayer(); screenTitle();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시간 여행 준비 노트 — 타임 하모니 사전 활동지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@400;600&family=Song+Myung&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&display=swap">
+<style>
+/* 게임과 같은 토큰. 화면에선 밤의 음악실 위에 양피지 종이, 인쇄하면 흰 A4 */
+:root{
+  --night:#0f1824; --panel:#1b2a3d; --line:#33496a; --brass:#d9a648; --brass-hi:#f0c46e; --brass-lo:#8e6a2c;
+  --parch:#f2e8d3; --parch-2:#e6d8bb; --paper:#fbf7ee; --ink:#2b2219; --ink-soft:#6b5a45; --rubric:#9b2d22; --rule:#cdb995;
+  --c0:#e8c35c; --c1:#d55b4c; --c2:#5f92e3; --c3:#de86ad; --c4:#86d8d3;
+  --f-display:"Song Myung","Nanum Myeongjo","Batang",serif; --f-story:"Gowun Batang","Nanum Myeongjo","Batang",serif;
+  --f-body:"Gowun Dodum","Malgun Gothic",sans-serif; --f-mono:"IBM Plex Mono","Consolas",monospace;
+  --f-goth:"UnifrakturMaguntia",serif; --f-fell:"IM Fell English","Times New Roman",serif;
+}
+@page{size:A4 portrait;margin:0}
+*{box-sizing:border-box}
+html{background:var(--night)}
+body{margin:0;font-family:var(--f-body);color:var(--ink);font-size:10.5pt;line-height:1.5;background:radial-gradient(ellipse at 50% -10%,rgba(217,166,72,.16),transparent 55%),var(--night)}
+[hidden]{display:none!important}
+.bar{position:sticky;top:0;z-index:5;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:12px max(16px,env(safe-area-inset-left,0px));background:rgba(15,24,36,.92);border-bottom:2px solid var(--brass)}
+.bar button{font:inherit;font-size:14px;background:var(--panel);color:#ebe5d8;border:1px solid var(--line);border-radius:10px;padding:8px 16px;cursor:pointer}
+.bar button.pri{background:var(--brass);color:#22180a;border-color:var(--brass);font-weight:700}
+.bar span{align-self:center;color:#9db0c6;font-size:13px}
+
+.page{width:210mm;height:297mm;margin:18px auto;background:var(--paper);padding:11mm 13mm 9mm;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:3mm}
+.page::before{content:"";position:absolute;inset:4mm;border:1px solid var(--rule);pointer-events:none}
+.pfoot{margin-top:auto;display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:7.5pt;color:var(--ink-soft);letter-spacing:.12em}
+.pfoot .strip{display:flex;gap:2px}.pfoot .strip i{width:9mm;height:1.6mm;border-radius:1mm}
+
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;color:var(--ink)}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:7.5pt;letter-spacing:.22em;text-transform:uppercase;color:var(--rubric)}
+
+/* 머리글 */
+.head{display:grid;grid-template-columns:1fr 46mm;gap:6mm;align-items:center;border-bottom:2px solid var(--ink);padding-bottom:3mm}
+.head h1{font-size:23pt;line-height:1.1;margin:1mm 0}
+.head h1 small{font-size:13pt;color:var(--brass-lo);margin-left:2mm}
+.head .sub{font-family:var(--f-story);font-size:10pt;color:var(--ink-soft)}
+.cass{height:27mm;border-radius:3mm;background:#1d2a3c;position:relative;border:1px solid #3e5577}
+.cass .lb{position:absolute;left:3mm;right:3mm;top:2.5mm;height:13mm;background:var(--parch);border-radius:1.5mm;padding:1mm 2.5mm;font-family:var(--f-display);font-size:9pt;color:var(--ink)}
+.cass .lb span{display:block;font-family:var(--f-mono);font-size:5.5pt;letter-spacing:.14em;color:var(--ink-soft)}
+.cass .st{position:absolute;left:0;right:0;bottom:1.8mm;height:1.6mm;background:linear-gradient(90deg,var(--c0),var(--c1),var(--c2),var(--c3),var(--c4))}
+.cass .win{position:absolute;left:11mm;right:11mm;bottom:3mm;height:7mm;background:#0d1520;border-radius:4mm;display:flex;justify-content:space-between;align-items:center;padding:0 2mm}
+.cass .win i{width:5mm;height:5mm;border-radius:50%;border:1.2mm solid var(--parch-2)}
+
+.who{display:grid;grid-template-columns:auto 1fr auto 1fr auto 1fr auto 1.6fr;gap:2mm;align-items:end;font-size:10pt}
+.who b{font-weight:400;font-family:var(--f-display)}
+
+/* 입력 칸: 화면에선 바로 쓰고, 인쇄하면 줄 */
+input.ln{font:inherit;font-family:var(--f-story);color:#1d3f8a;border:0;border-bottom:1px solid #9a8a70;background:transparent;width:100%;padding:0 1mm;height:5mm;min-width:0}
+input.ln:focus{outline:none;border-bottom:2px solid var(--brass);background:rgba(217,166,72,.08)}
+input.sm{width:14mm;text-align:center}
+input.mid{width:24mm;text-align:center}
+.lines input.ln{height:6.5mm}
+
+/* 미션 쪽지 */
+.mission{background:#efe2c0;border:1px solid #b89a62;border-radius:1mm;padding:2.5mm 4.5mm;position:relative;font-family:var(--f-story);font-size:9.5pt;line-height:1.5}
+.mission .k{font-family:var(--f-mono);font-size:7pt;letter-spacing:.2em;color:var(--rubric)}
+.mission .wax{position:absolute;right:4mm;top:-3.5mm;width:12mm;height:12mm;border-radius:50%;background:radial-gradient(circle at 35% 35%,#c4473a,#7a1f18);color:#f2d3c8;display:grid;place-items:center;font-family:var(--f-display);font-size:7pt}
+
+/* 섹션 */
+.sec{display:grid;gap:1.6mm}
+.sec>h2{display:flex;align-items:baseline;gap:2.5mm;font-size:13pt;border-bottom:1px solid var(--ink);padding-bottom:1mm}
+.sec>h2 .no{font-family:var(--f-fell);font-size:15pt;width:7mm;height:7mm;border-radius:50%;background:var(--ink);color:var(--parch);display:inline-grid;place-items:center;flex:none;line-height:1}
+.sec>h2 small{font-family:var(--f-body);font-size:9pt;color:var(--ink-soft);margin-left:auto}
+.how{font-family:var(--f-story);font-size:9.5pt;color:var(--ink-soft)}
+.bogi{border:1px dashed var(--brass-lo);border-radius:2mm;padding:1.5mm 3mm;font-size:9.5pt;background:rgba(242,232,211,.5)}
+.bogi b{font-family:var(--f-display);font-weight:400;color:var(--rubric);margin-right:2mm}
+
+table{border-collapse:collapse;width:100%;font-size:9.5pt}
+th{font-family:var(--f-mono);font-size:7pt;letter-spacing:.14em;color:var(--ink-soft);text-align:left;padding:1.2mm 2mm;border-bottom:1.5px solid var(--ink);font-weight:600}
+td{padding:.7mm 2mm;border-bottom:1px solid var(--rule);vertical-align:middle;font-family:var(--f-story)}
+td.era{font-family:var(--f-display);font-size:12.5pt;white-space:nowrap}
+td.era i{display:inline-block;width:2.4mm;height:2.4mm;border-radius:50%;margin-right:2mm;vertical-align:middle;background:var(--c)}
+tr.off td{color:#9a8f80}
+td .bx{display:inline-block;width:18mm;border-bottom:1px solid #9a8a70}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+.opts{list-style:none;margin:0;padding:0;display:grid;gap:1.3mm;font-family:var(--f-story);font-size:9.5pt}
+.opts b{font-family:var(--f-display);font-weight:400;color:var(--rubric);margin-right:1.5mm}
+.terms{display:grid;grid-template-columns:repeat(4,1fr);gap:2mm}
+.terms div{border:1px solid var(--rule);border-radius:2mm;padding:1.6mm 2mm;display:grid;gap:1mm;background:#fffdf7}
+.terms b{font-family:var(--f-display);font-weight:400;font-size:11.5pt}
+.check{display:flex;flex-wrap:wrap;gap:1.5mm 6mm;font-family:var(--f-story);font-size:10pt}
+.check label{display:flex;gap:1.5mm;align-items:center}
+.check input{width:4mm;height:4mm;accent-color:var(--brass-lo)}
+.mark{font-family:var(--f-mono);font-size:8pt;color:var(--ink-soft)}
+
+/* 교사용 */
+.teacher{background:#fffdf7}
+.teacher .ans{font-family:var(--f-story);font-size:10pt;line-height:1.7}
+.teacher .ans b{font-family:var(--f-display);font-weight:400;color:var(--rubric)}
+.teacher table td{font-size:9.5pt}
+.tip{list-style:none;margin:0;padding:0;display:grid;gap:1.6mm;font-family:var(--f-story);font-size:10pt}
+.tip li{padding-left:5mm;position:relative}
+.tip li::before{content:"❦";position:absolute;left:0;color:var(--brass-lo)}
+
+@media screen and (max-width:820px){.page{transform-origin:top left}}
+@media print{
+  html,body{background:#fff}
+  .bar{display:none}
+  .page{margin:0;box-shadow:none;break-after:page;background:#fff}
+  .page:last-of-type{break-after:auto}
+  input.ln{color:#000}
+  .mission,.bogi{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pfoot .strip,.cass,.sec>h2 .no,td.era i,.mission .wax{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <button class="pri" id="print">인쇄하기</button>
+  <button id="key" aria-pressed="false">교사용 정답 보이기</button>
+  <button id="clear">입력 지우기</button>
+  <span>화면에서 바로 써도 되고, 인쇄해서 손으로 써도 돼요. 쓴 내용은 이 컴퓨터에 저장돼요.</span>
+</div>
+
+<!-- ================= 1쪽 ================= -->
+<section class="page">
+  <header class="head">
+    <div>
+      <p class="eyebrow">게임 전 사전 활동지 · 서양음악사</p>
+      <h1>시간 여행 준비 노트<small>타임 하모니</small></h1>
+      <p class="sub">『사라진 멜로디: 타임 하모니』를 시작하기 전에, 다섯 시대와 다섯 작곡가를 미리 만나요.</p>
+    </div>
+    <div class="cass" aria-hidden="true"><div class="lb">타임 하모니 C-90<span>SIDE A · 1150 → 1952</span></div><div class="win"><i></i><i></i></div><div class="st"></div></div>
+  </header>
+
+  <div class="who">
+    <b>학년</b><input class="ln" aria-label="학년"><b>반</b><input class="ln" aria-label="반"><b>번호</b><input class="ln" aria-label="번호"><b>이름</b><input class="ln" aria-label="이름">
+  </div>
+
+  <div class="mission"><span class="wax">긴급</span><span class="k">수신 · 발신 연도 알 수 없음</span><br>
+    서양음악사의 거장들이 위기에 빠져 명곡을 완성하지 못하고 있다. 출발 전에 <b>시대 지도</b>를 완성하고, 만날 <b>작곡가</b>와 <b>음악 용어</b>를 익혀 두어라. 준비가 끝나면 카세트를 재생할 것. ▶</div>
+
+  <section class="sec">
+    <h2><span class="no">1</span>시대 흐름 잡기<small>슬라이드 3~19쪽</small></h2>
+    <p class="how">[보기]의 낱말을 빈칸에 넣어 연표를 완성하세요. 르네상스는 게임에 나오지 않아서 미리 채워 두었어요.</p>
+    <p class="bogi"><b>보기</b>바로크 · 낭만 · 단선율 · 대위법 · 형식 · 감정 · 1802 · 1952 · 존 케이지</p>
+    <table>
+      <thead><tr><th style="width:21%">시대</th><th style="width:17%">대략의 연도</th><th style="width:13%">게임 속 해</th><th>핵심 키워드</th><th style="width:22%">만나는 작곡가</th></tr></thead>
+      <tbody>
+        <tr><td class="era" style="--c:var(--c0)"><i></i>중세</td><td>~1450</td><td>1150년경</td><td><input class="ln mid">과 악보의 탄생</td><td>힐데가르트 폰 빙엔</td></tr>
+        <tr class="off"><td class="era"><i style="background:#c9bfae"></i>르네상스</td><td>1450~1600</td><td>—</td><td>여러 성부의 합창</td><td>(게임에 없음)</td></tr>
+        <tr><td class="era" style="--c:var(--c1)"><i></i><input class="ln mid" aria-label="2번 시대"></td><td>1600~1750</td><td>1717년</td><td>질서와 <input class="ln mid"></td><td>요한 제바스티안 바흐</td></tr>
+        <tr><td class="era" style="--c:var(--c2)"><i></i>고전</td><td>1750~1820</td><td><input class="ln sm">년</td><td><input class="ln mid">과 청각 장애 극복</td><td>루트비히 판 베토벤</td></tr>
+        <tr><td class="era" style="--c:var(--c3)"><i></i><input class="ln mid" aria-label="4번 시대"></td><td>1820~1900</td><td>1847년</td><td><input class="ln mid">과 피아노 시인</td><td>프레데리크 쇼팽</td></tr>
+        <tr><td class="era" style="--c:var(--c4)"><i></i>현대</td><td>1900~</td><td><input class="ln sm">년</td><td>고정관념을 깨는 새로운 시도</td><td><input class="ln" aria-label="현대 작곡가"></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="sec">
+    <h2><span class="no">2</span>작곡가와 설명 연결하기<small>게임 속 작곡가 5명</small></h2>
+    <p class="how">각 작곡가에 맞는 설명을 골라 기호(㉠~㉤)를 쓰세요.</p>
+    <div class="two">
+      <table>
+        <thead><tr><th>작곡가</th><th style="width:22mm">설명 기호</th></tr></thead>
+        <tbody>
+          <tr><td>① 루트비히 판 베토벤</td><td><input class="ln sm"></td></tr>
+          <tr><td>② 존 케이지</td><td><input class="ln sm"></td></tr>
+          <tr><td>③ 힐데가르트 폰 빙엔</td><td><input class="ln sm"></td></tr>
+          <tr><td>④ 프레데리크 쇼팽</td><td><input class="ln sm"></td></tr>
+          <tr><td>⑤ 요한 제바스티안 바흐</td><td><input class="ln sm"></td></tr>
+        </tbody>
+      </table>
+      <ul class="opts">
+        <li><b>㉠</b>폴란드를 떠나 파리에서 활동한 ‘피아노의 시인’</li>
+        <li><b>㉡</b>수녀원장으로, 자신이 본 환시를 노래로 지어 남겼다</li>
+        <li><b>㉢</b>4분 33초 동안 연주하지 않는 곡으로 ‘듣는 법’을 바꿨다</li>
+        <li><b>㉣</b>여러 선율을 엮는 대위법의 대가, ‘음악의 아버지’</li>
+        <li><b>㉤</b>귀가 들리지 않게 되었지만 교향곡 5번을 완성했다</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2><span class="no">★</span>사건 순서 맞히기<small>보너스</small></h2>
+    <p class="how">일어난 순서대로 1~5를 쓰세요.</p>
+    <table>
+      <tbody>
+        <tr><td style="width:14mm"><input class="ln sm"></td><td>존 케이지의 『4′33″』가 숲속 공연장에서 처음 연주되었다.</td><td style="width:14mm"><input class="ln sm"></td><td>바흐가 사직을 고집하다 바이마르에서 갇혔다.</td></tr>
+        <tr><td><input class="ln sm"></td><td>쇼팽이 바르샤바가 함락되었다는 소식을 들었다.</td><td><input class="ln sm"></td><td>힐데가르트가 루페르츠베르크 수녀원을 세웠다.</td></tr>
+        <tr><td><input class="ln sm"></td><td>베토벤이 하일리겐슈타트에서 유서 같은 편지를 썼다.</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="pfoot"><span>TIME HARMONY · 사전 활동지</span><span class="strip"><i style="background:var(--c0)"></i><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span><span>1 / 2</span></footer>
+</section>
+
+<!-- ================= 2쪽 ================= -->
+<section class="page">
+  <section class="sec">
+    <h2><span class="no">3</span>음악 용어 미리 보기<small>게임 퀴즈에 그대로 나와요</small></h2>
+    <p class="how">각 용어의 뜻을 아래에서 골라 기호(가~아)를 쓰세요.</p>
+    <div class="terms">
+      <div><b>단선율</b><input class="ln sm"></div><div><b>네우마</b><input class="ln sm"></div><div><b>대위법</b><input class="ln sm"></div><div><b>하프시코드</b><input class="ln sm"></div>
+      <div><b>피아노포르테</b><input class="ln sm"></div><div><b>소나타 형식</b><input class="ln sm"></div><div><b>녹턴</b><input class="ln sm"></div><div><b>12음 기법</b><input class="ln sm"></div>
+    </div>
+    <ul class="opts" style="grid-template-columns:1fr 1fr;column-gap:5mm">
+      <li><b>(가)</b>‘밤의 노래’라는 뜻의 서정적인 피아노곡</li>
+      <li><b>(나)</b>건반을 누르면 줄을 뜯어 소리를 내는 바로크 건반악기</li>
+      <li><b>(다)</b>12개 음을 모두 한 번씩 쓴 음렬로 곡을 만드는 방법</li>
+      <li><b>(라)</b>반주 없이 하나의 선율을 여럿이 함께 부르는 음악</li>
+      <li><b>(마)</b>누르는 힘으로 여리게·세게를 조절하는 건반악기</li>
+      <li><b>(바)</b>독립된 여러 선율을 동시에 조화롭게 엮는 기법</li>
+      <li><b>(사)</b>가사 위에 음의 높낮이를 표시한 중세의 기호</li>
+      <li><b>(아)</b>‘제시부-발전부-재현부’로 짜는 고전 시대의 곡 짜임</li>
+    </ul>
+  </section>
+
+  <section class="sec">
+    <h2><span class="no">4</span>들으며 기록하기<small>선생님이 들려주는 곡</small></h2>
+    <p class="how">곡을 듣고 들리는 악기, 빠르기(빠름·보통·느림), 느낌을 한 단어로 적어 보세요.</p>
+    <table>
+      <thead><tr><th style="width:34%">곡</th><th>들리는 악기 · 목소리</th><th style="width:16%">빠르기</th><th style="width:20%">느낌 한 단어</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mark">중세</span> 그레고리오 성가</td><td><input class="ln"></td><td><input class="ln"></td><td><input class="ln"></td></tr>
+        <tr><td><span class="mark">바로크</span> 바흐 「토카타와 푸가 d단조」</td><td><input class="ln"></td><td><input class="ln"></td><td><input class="ln"></td></tr>
+        <tr><td><span class="mark">고전</span> 베토벤 교향곡 5번 「운명」</td><td><input class="ln"></td><td><input class="ln"></td><td><input class="ln"></td></tr>
+        <tr><td><span class="mark">낭만</span> 쇼팽 「혁명 에튀드」</td><td><input class="ln"></td><td><input class="ln"></td><td><input class="ln"></td></tr>
+        <tr><td><span class="mark">현대</span> 30초 동안 교실의 소리</td><td colspan="3"><input class="ln" placeholder="들린 소리를 모두 써 보세요"></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="sec">
+    <h2><span class="no">5</span>시간 여행 준비<small>타임라인 균열을 피하라</small></h2>
+    <div class="two">
+      <div style="display:grid;gap:1.5mm">
+        <p class="how">(1) 그 시대에 있었던 물건이면 ○, 없었으면 ✕</p>
+        <table>
+          <thead><tr><th>장면</th><th>물건</th><th style="width:13mm">○/✕</th></tr></thead>
+          <tbody>
+            <tr><td>1150년경 수녀원</td><td>활판 인쇄기</td><td><input class="ln sm"></td></tr>
+            <tr><td>1717년 바흐</td><td>전자 기타</td><td><input class="ln sm"></td></tr>
+            <tr><td>1802년 베토벤</td><td>깃펜과 잉크</td><td><input class="ln sm"></td></tr>
+            <tr><td>1847년 쇼팽</td><td>그랜드 피아노</td><td><input class="ln sm"></td></tr>
+            <tr><td>1847년 쇼팽</td><td>비행기</td><td><input class="ln sm"></td></tr>
+            <tr><td>1952년 케이지</td><td>초시계</td><td><input class="ln sm"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:grid;gap:1.5mm;align-content:start">
+        <p class="how">(2) 위기에 빠진 작곡가에게 건넬 한마디</p>
+        <table>
+          <tbody>
+            <tr><td style="width:24mm"><b style="font-family:var(--f-display);font-weight:400">바흐</b><br><span class="mark">일자리를 옮기려다 갇힘</span></td><td><input class="ln"></td></tr>
+            <tr><td><b style="font-family:var(--f-display);font-weight:400">베토벤</b><br><span class="mark">귀가 들리지 않음</span></td><td><input class="ln"></td></tr>
+            <tr><td><b style="font-family:var(--f-display);font-weight:400">쇼팽</b><br><span class="mark">고향을 떠나 아프고 외로움</span></td><td><input class="ln"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2><span class="no">6</span>나의 질문과 다짐</h2>
+    <div class="lines" style="display:grid;gap:1.5mm;font-family:var(--f-story);font-size:10pt">
+      <label>가장 만나 보고 싶은 작곡가와 그 이유 <input class="ln"></label>
+      <label>서양음악사에서 더 알고 싶은 것 한 가지 <input class="ln"></label>
+    </div>
+    <div class="check">
+      <label><input type="checkbox">이어폰·헤드폰을 준비했다</label>
+      <label><input type="checkbox">작곡가의 시대와 성격을 생각하며 대답하겠다</label>
+      <label><input type="checkbox">그 시대에 없던 물건은 권하지 않겠다</label>
+    </div>
+  </section>
+
+  <footer class="pfoot"><span>TIME HARMONY · 사전 활동지</span><span class="strip"><i style="background:var(--c0)"></i><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></span><span>2 / 2</span></footer>
+</section>
+
+<!-- ================= 교사용 ================= -->
+<section class="page teacher" id="answers" hidden>
+  <header class="head" style="grid-template-columns:1fr">
+    <div><p class="eyebrow">교사용 · 학생에게 나눠 주지 마세요</p><h1>정답과 지도 팁</h1></div>
+  </header>
+  <section class="sec">
+    <h2><span class="no">1</span>시대 흐름 잡기</h2>
+    <p class="ans">중세 — <b>단선율</b> · 2번 시대 <b>바로크</b>, 질서와 <b>대위법</b> · 고전 <b>1802</b>년, <b>형식</b> · 4번 시대 <b>낭만</b>, <b>감정</b> · 현대 <b>1952</b>년, <b>존 케이지</b></p>
+  </section>
+  <section class="sec">
+    <h2><span class="no">2</span>작곡가 연결 · ★ 사건 순서</h2>
+    <p class="ans">① 베토벤 <b>㉤</b> · ② 케이지 <b>㉢</b> · ③ 힐데가르트 <b>㉡</b> · ④ 쇼팽 <b>㉠</b> · ⑤ 바흐 <b>㉣</b><br>
+    사건 순서: 힐데가르트 수녀원(1150경) <b>1</b> → 바흐 구금(1717) <b>2</b> → 베토벤 유서(1802) <b>3</b> → 바르샤바 함락 소식(1831) <b>4</b> → 『4′33″』 초연(1952) <b>5</b><br>
+    <span class="mark">표의 칸 순서로 쓰면: 왼쪽 위부터 5 · 2 / 4 · 1 / 3</span></p>
+  </section>
+  <section class="sec">
+    <h2><span class="no">3</span>음악 용어</h2>
+    <p class="ans">단선율 <b>(라)</b> · 네우마 <b>(사)</b> · 대위법 <b>(바)</b> · 하프시코드 <b>(나)</b> · 피아노포르테 <b>(마)</b> · 소나타 형식 <b>(아)</b> · 녹턴 <b>(가)</b> · 12음 기법 <b>(다)</b></p>
+  </section>
+  <section class="sec">
+    <h2><span class="no">4</span>들으며 기록하기 (예시 답)</h2>
+    <table>
+      <thead><tr><th>곡</th><th>악기 · 목소리</th><th>빠르기</th><th>느낌</th></tr></thead>
+      <tbody>
+        <tr><td>그레고리오 성가</td><td>사람 목소리, 반주 없음</td><td>느림</td><td>경건함, 고요함</td></tr>
+        <tr><td>토카타와 푸가 d단조</td><td>파이프 오르간</td><td>보통~빠름</td><td>웅장함, 긴장</td></tr>
+        <tr><td>교향곡 5번 1악장</td><td>관현악(현악기, 관악기)</td><td>빠름</td><td>강렬함, 운명</td></tr>
+        <tr><td>혁명 에튀드</td><td>피아노</td><td>빠름</td><td>분노, 격정</td></tr>
+        <tr><td>30초 교실의 소리</td><td colspan="3">정답 없음 — 들은 소리를 많이 적을수록 좋아요</td></tr>
+      </tbody>
+    </table>
+  </section>
+  <section class="sec">
+    <h2><span class="no">5</span>시간 여행 준비</h2>
+    <p class="ans">활판 인쇄기 <b>✕</b>(1450년경 구텐베르크) · 전자 기타 <b>✕</b>(1930년대) · 깃펜과 잉크 <b>○</b> · 그랜드 피아노 <b>○</b> · 비행기 <b>✕</b>(첫 동력 비행 1903년) · 초시계 <b>○</b><br>
+    <span class="mark">✕ 물건은 게임의 ‘타임라인 균열’ 선택지로 나와요. (2) 한마디는 정답이 없고, 공감하는 말일수록 게임의 공감도가 올라가요.</span></p>
+  </section>
+  <section class="sec">
+    <h2><span class="no">❦</span>지도 팁</h2>
+    <ul class="tip">
+      <li>수업 흐름: 슬라이드(15분) → 이 활동지(15분) → 게임(다음 차시 30분 이상). 4번은 슬라이드의 ‘듣기’ 버튼으로 각 30초씩 들려주세요.</li>
+      <li>1·3번의 낱말은 게임의 퀴즈 13문항에 그대로 나와요. 활동지를 먼저 하면 수료증의 퀴즈 정답률이 올라가요.</li>
+      <li>게임 뒤에 이 활동지의 5-(2)와 게임 속 대화 선택을 비교해 보면 좋은 정리 활동이 돼요.</li>
+    </ul>
+  </section>
+  <footer class="pfoot"><span>TIME HARMONY · 교사용</span><span></span><span>정답</span></footer>
+</section>
+
+<script>
+"use strict";
+const KEY='timeHarmony.worksheet.v1';
+const fields=[...document.querySelectorAll('.page:not(.teacher) input')];
+let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+fields.forEach((f,i)=>{if(i in saved){f.type==='checkbox'?f.checked=!!saved[i]:f.value=saved[i]}
+  f.addEventListener('input',()=>{saved[i]=f.type==='checkbox'?f.checked:f.value;try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}})});
+document.getElementById('print').onclick=()=>window.print();
+document.getElementById('key').onclick=e=>{const a=document.getElementById('answers');a.hidden=!a.hidden;e.currentTarget.setAttribute('aria-pressed',String(!a.hidden));e.currentTarget.textContent=a.hidden?'교사용 정답 보이기':'교사용 정답 숨기기';if(!a.hidden)a.scrollIntoView({behavior:'smooth'})};
+const clr=document.getElementById('clear');let armed=false;
+clr.onclick=()=>{if(!armed){armed=true;clr.textContent='한 번 더 누르면 모두 지워져요';setTimeout(()=>{armed=false;clr.textContent='입력 지우기'},3000);return}
+  fields.forEach(f=>f.type==='checkbox'?f.checked=false:f.value='');saved={};try{localStorage.removeItem(KEY)}catch(e){};armed=false;clr.textContent='입력 지우기'};
+</script>
+</body>
+</html>
