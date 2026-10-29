@@ -512,6 +512,8 @@ summary{cursor:pointer;color:var(--parch)}
 
 <script>
 "use strict";
+/* 콘솔에서 점수·상태를 바로 고칠 수 없도록 전체를 함수 안에 둠 */
+(()=>{
 /* =========================================================
    공통 도우미
    ========================================================= */
@@ -534,16 +536,23 @@ const store={
 const SAVE_KEY='timeHarmony.save.v2',HIST_KEY='timeHarmony.history.v1',OPT_KEY='timeHarmony.opts.v1';
 let opts=Object.assign({silence:'short'},store.get(OPT_KEY,{}));
 function freshState(name,cls){return{name:name||'',cls:cls||'',energy:100,crystals:[0,0,0,0,0],docs:[0,0,0,0,0],quiz:{},games:{},glitches:0,started:Date.now(),finished:null,histSaved:false}}
-let S=Object.assign(freshState(),store.get(SAVE_KEY,{}));
+const RAW0=store.get(SAVE_KEY,null);
+let S=Object.assign(freshState(),RAW0||{});
 /* 같은 게임을 두 창(탭)에 띄워 한쪽에서 답을 미리 보는 것을 막음:
    저장소에 먼저 기록된 '첫 답'이 있으면 그것을 따름 */
 function syncRecords(){
   const f=store.get(SAVE_KEY,null); if(!f||f.started!==S.started) return;
+  if(f._sig!==sigOf(f)){S.tampered=true;return}   // 저장소를 직접 고친 흔적
   S.quiz=Object.assign({},S.quiz,f.quiz||{}); S.games=Object.assign({},S.games,f.games||{});
   S.crystals=S.crystals.map((v,i)=>v||(f.crystals||[])[i]||0); S.docs=S.docs.map((v,i)=>v||(f.docs||[])[i]||0);
   S.glitches=Math.max(S.glitches,f.glitches||0); S.energy=Math.min(S.energy,f.energy??100);
 }
-function save(){syncRecords();store.set(SAVE_KEY,S)}
+function save(){
+  syncRecords(); const c=signed(S); store.set(SAVE_KEY,c);
+  if(S.name){const sl=store.get(SLOTS_KEY,{});sl[slotId(S.name,S.cls)]=c;const ks=Object.keys(sl);
+    if(ks.length>80) ks.sort((a,b)=>(sl[a].started||0)-(sl[b].started||0)).slice(0,ks.length-80).forEach(k=>delete sl[k]);
+    store.set(SLOTS_KEY,sl)}
+}
 function recordQuiz(id,era,q,ok){syncRecords();if(!(id in S.quiz)){S.quiz[id]={era,q,ok:!!ok};save()}}
 function recordGame(id,era,label,ok){syncRecords();if(!(id in S.games)){S.games[id]={era,label,ok:!!ok};save()}}
 const nm=t=>String(t).replace(/\{name\}/g,S.name||'너');
@@ -553,12 +562,20 @@ const nmH=t=>String(t).replace(/\{name\}/g,esc(S.name||'너'));   // innerHTML�
 const SALT='TH|부흥|2026|cassette';
 function fnv(s,seed){let h=seed>>>0;for(const ch of s){h^=ch.codePointAt(0);h=Math.imul(h,16777619)>>>0}return h}
 function vcode(parts){const s=SALT+'|'+parts.join('|');return 'TH-'+fnv(s,2166136261).toString(36).toUpperCase().padStart(7,'0').slice(-7)+'-'+fnv(s,0x9e3779b9).toString(36).toUpperCase().padStart(4,'0').slice(-4)}
-const ATT_KEY='timeHarmony.attempts.v1';
+const ATT_KEY='timeHarmony.attempts.v2', SLOTS_KEY='timeHarmony.slots.v1';
+const slotId=(n,c)=>(n+'|'+c).replace(/\s+/g,'').toLowerCase();
+function sigOf(o){const c=Object.assign({},o);delete c._sig;return fnv(SALT+'|save|'+JSON.stringify(c),0x9747b28c)}
+function signed(o){const c=Object.assign({},o);delete c._sig;c._sig=sigOf(c);return c}
+if(RAW0&&RAW0.name&&RAW0._sig!==sigOf(RAW0)) S.tampered=true;
+const ansKey=(id,t)=>fnv(SALT+'|ans|'+id+'|'+t,2166136261);
+const isAns=(id,k,t)=>ansKey(id,t)===k;   // 정답은 소스에 글자로 두지 않고 해시로만 확인
 
 /* 이름 점검: 욕설·장난 이름, 기호 막기 */
-const BAD=['시발','씨발','씨빨','시벌','씨벌','ㅅㅂ','ㅆㅂ','tlqkf','씹','병신','븅신','빙신','ㅂㅅ','qudtls','개새','개색','개세','새끼','섀끼','쌔끼','ㅅㄲ','좆','존나','졸라','ㅈㄴ','지랄','ㅈㄹ','닥쳐','꺼져','미친','ㅁㅊ','또라이','엠창','느금','니애미','니엄마','애미','애비','에미','패드립','fuck','shit','bitch','sex','섹스','야동','변태','똥꼬','고추'];
-function badName(s){const t=String(s).toLowerCase().replace(/[\s._\-~!@#$%^&*+=|\\/:;'"`,?·ㆍ0-9]/g,'');return BAD.some(w=>t.includes(w))}
-const cleanName=s=>String(s).replace(/[<>()\[\]{}]/g,'').replace(/\s+/g,' ').trim();
+const BAD=['시발','씨발','씨빨','시벌','씨벌','ㅅㅂ','ㅆㅂ','tlqkf','씹','병신','븅신','빙신','ㅂㅅ','qudtls','개새','개색','개세','새끼','섀끼','쌔끼','ㅅㄲ','좆','존나','졸라','ㅈㄴ','지랄','ㅈㄹ','닥쳐','꺼져','미친','ㅁㅊ','또라이','엠창','느금','니애미','니엄마','애미','애비','에미','패드립','fuck','shit','bitch','sex','섹스','야동','변태','똥꼬','고추','sibal','ssibal','shibal','sival','byungsin','byeongsin','gaesaekki','saekki','ssip','jonna','fuk','fck','porn','nigga','nigger'];
+function normName(s){return String(s).normalize('NFKC').replace(/[\u200B-\u200F\u2060\uFEFF\u00AD]/g,'')}   // 전각 글자·투명 문자 정리
+function badName(s){const t=normName(s).toLowerCase().replace(/[^a-z가-힣ㄱ-ㅎㅏ-ㅣ]/g,'');return BAD.some(w=>t.includes(w))}
+function oddName(s){return /[ㄱ-ㅎㅏ-ㅣ]/.test(s)||!/[가-힣].*[가-힣]|[a-zA-Z].*[a-zA-Z]/.test(s)||/(.)\1\1/.test(s)}
+const cleanName=s=>normName(s).replace(/[<>()\[\]{}]/g,'').replace(/\s+/g,' ').trim().slice(0,20);
 
 /* 화면을 떠날 때 미니게임이 남긴 키 입력·타이머 정리 */
 let gameCleanup=null;
@@ -759,6 +776,9 @@ function ambientBuild(t,bus,ctl){
 
 /* ---------- 재생 ---------- */
 function playClip(id,opt={}){
+  const k0=typeof id==='string'?id:id&&id.title, t0n=performance.now();
+  if(k0&&k0===playClip.lk&&t0n-playClip.lt<400&&A.cur) return 0;   // 같은 곡 버튼 연타 방지
+  playClip.lk=k0; playClip.lt=t0n;
   const key=typeof id==='string'?id:null, clip=key?CLIPS[key]:id;
   if(key&&AOK[key]&&!clip.synthOnly&&!clip.ambient&&!opt.synth) return playFile(key,opt.limit??clip.flen??20);
   if(key==='ambient'&&AOK.wind&&AOK.rain&&AOK.crowd) return playAmbientFiles(opt.limit);
@@ -800,6 +820,7 @@ function stopClip(silent){
   if(!silent) setPlayer();
 }
 function sfx(kind){
+  const now0=performance.now();sfx.t=sfx.t||{};if(now0-(sfx.t[kind]||0)<150)return;sfx.t[kind]=now0;   // 연타 소음 방지
   if(!ac()) return; const c=A.ctx,t=c.currentTime+.02,bus=gn(1,A.comp);bus.connect(gn(.25,A.conv));
   if(kind==='chime'){['C6','E6','G6','C7'].forEach((n,i)=>play('bell',n,t+i*.12,1,.9,bus))}
   if(kind==='rewind'){const g=gn(0,bus),o=osc('sawtooth',1400,t,t+.7);o.frequency.exponentialRampToValueAtTime(120,t+.65);o.connect(filt('bandpass',900,3,g));noiseSrc(t,t+.7).connect(gn(.3,g));g.gain.setValueAtTime(.25,t);g.gain.linearRampToValueAtTime(0,t+.7)}
@@ -1085,14 +1106,14 @@ const ERAS=[
   {x:'노래를 기록으로 남기면 어때요? 소리가 올라가고 내려가는 모양을 그림처럼 적는 거예요.',r:25,re:'그림처럼… 네우마 말이군요! 가사 위에 작은 기호를 얹어 선율이 오르내리는 모양을 표시하는 방법이지요.'},
   {x:'수녀님들께 더 열심히 외우라고 하세요.',r:-10,re:'노래가 수십 곡이 넘는답니다. 기억만으로는 한계가 있어요.'},
   {x:'인쇄기로 악보를 천 장쯤 찍어서 나눠 주세요!',g:'press'}]},
- {t:'clue',id:'m-clue',clip:'chant',q:'수녀들이 부르는 성가를 다시 들어 보세요. 이 음악의 특징은 무엇일까요?',o:[
-  {x:'모두가 하나의 선율을 함께 부른다',ok:1},{x:'여러 성부가 서로 다른 선율을 동시에 부른다'},{x:'드럼과 기타 반주가 박자를 이끈다'}],
+ {t:'clue',id:'m-clue',k:911596947,clip:'chant',q:'수녀들이 부르는 성가를 다시 들어 보세요. 이 음악의 특징은 무엇일까요?',o:[
+  {x:'모두가 하나의 선율을 함께 부른다'},{x:'여러 성부가 서로 다른 선율을 동시에 부른다'},{x:'드럼과 기타 반주가 박자를 이끈다'}],
   ex:'중세 성가는 반주 없이 하나의 선율을 함께 부르는 <b>단선율(모노포니)</b> 음악이에요. 라틴어 가사로 예배 때 불렀어요.'},
  {t:'s',x:'그런데 네우마만으로는 ‘올라간다’는 건 알아도 ‘얼마나’ 올라가는지는 알 수 없어요. 처음 보는 노래는 여전히 불러 볼 수가 없지요.'},
- {t:'c',quiz:'m-staff',qt:'음높이를 정확히 적기 위해 중세에 고안된 방법은?',p:'정확한 높이는 어떻게 표시할 수 있을까?',o:[
-  {x:'가로줄을 몇 개 긋고, 줄 위와 줄 사이에 기호를 놓으면 높이가 정확해져요.',r:25,ok:1,re:'이탈리아의 수도사 귀도 다레초가 알린 방법이군요! 줄을 기준으로 삼으면 처음 보는 노래도 바로 부를 수 있겠어요.'},
-  {x:'색깔로 구분해요. 빨간색은 높은 음, 파란색은 낮은 음!',r:5,re:'재미있는 생각이지만, 물감은 아주 귀하답니다. 게다가 색 두 가지로는 높이를 다 나타낼 수 없겠어요.'},
-  {x:'음마다 숫자를 1, 2, 3… 매겨서 적어요.',r:5,re:'숫자는 높이를 알려 주지만, 노래가 오르내리는 모양이 한눈에 보이진 않네요. 더 그림 같은 방법이 있을 거예요.'}]},
+ {t:'c',quiz:'m-staff',k:1854026759,qt:'음높이를 정확히 적기 위해 중세에 고안된 방법은?',p:'정확한 높이는 어떻게 표시할 수 있을까?',o:[
+  {x:'가로줄을 몇 개 긋고, 줄 위와 줄 사이에 기호를 놓으면 높이가 정확해져요.',re:'이탈리아의 수도사 귀도 다레초가 알린 방법이군요! 줄을 기준으로 삼으면 처음 보는 노래도 바로 부를 수 있겠어요.'},
+  {x:'색깔로 구분해요. 빨간색은 높은 음, 파란색은 낮은 음!',re:'재미있는 생각이지만, 물감은 아주 귀하답니다. 게다가 색 두 가지로는 높이를 다 나타낼 수 없겠어요.'},
+  {x:'음마다 숫자를 1, 2, 3… 매겨서 적어요.',re:'숫자는 높이를 알려 주지만, 노래가 오르내리는 모양이 한눈에 보이진 않네요. 더 그림 같은 방법이 있을 거예요.'}]},
  {t:'doc',title:'루페르츠베르크의 거대한 필사본',src:'12세기 말 · 『리젠코덱스(Riesencodex)』',x:'힐데가르트의 말년 무렵, 그녀의 글과 노래를 한데 모은 거대하고 무거운 필사본이 만들어졌어요. 이 책에는 성가가 줄 위의 네우마로 적혀 있어서, 850년 가까이 지난 오늘날에도 그 노래를 다시 부를 수 있어요. 지금은 독일 비스바덴의 도서관에 보관되어 있어요.'},
  {t:'c',p:'힐데가르트의 노래는 무엇을 위한 것이었을까?',o:[
   {x:'하느님을 찬양하는 기도이자, 수녀원장님이 본 환시를 전하는 노래요.',r:25,re:'맞아요. 제게 음악은 하늘의 조화를 땅으로 옮기는 일이랍니다.'},
@@ -1111,14 +1132,14 @@ const ERAS=[
   {x:'정말 억울하시겠어요. 더 좋은 자리에서 마음껏 음악을 하고 싶으셨던 거잖아요.',r:25,re:'알아주니 고맙소. 이 시대의 음악가는 귀족이나 교회에 고용된 일꾼이라, 떠나는 것도 마음대로 할 수 없다오.'},
   {x:'공작님 말씀을 그냥 들으시지 그러셨어요.',r:0,re:'허허, 그대 말도 틀리진 않소. 이 시대엔 음악가도 주인의 허락 없이는 일자리를 옮길 수 없으니.'},
   {x:'전자기타로 록 버전을 만들면 대박 날 거예요!',g:'guitar'}]},
- {t:'clue',id:'b-clue',clip:'bach_prelude',q:'바흐가 쓴 이 곡을 들어 보세요. 건반을 누르면 줄을 ‘뜯어서’ 반짝이는 소리를 내는 바로크 시대의 건반악기는 무엇일까요?',o:[
-  {x:'하프시코드(쳄발로)',ok:1},{x:'전자 신시사이저'},{x:'파이프 오르간'}],
+ {t:'clue',id:'b-clue',k:1270023689,clip:'bach_prelude',q:'바흐가 쓴 이 곡을 들어 보세요. 건반을 누르면 줄을 ‘뜯어서’ 반짝이는 소리를 내는 바로크 시대의 건반악기는 무엇일까요?',o:[
+  {x:'하프시코드(쳄발로)'},{x:'전자 신시사이저'},{x:'파이프 오르간'}],
   ex:'<b>하프시코드</b>는 건반을 누르면 작은 갈고리가 줄을 뜯어 소리를 내요. 방금 곡은 『평균율 클라비어곡집』 1권의 첫 번째 프렐류드예요.'},
  {t:'s',x:'여기 갇혀서도 교회 오르간을 위한 짧은 코랄 곡들을 쓰고 있었소. 음악이 없으면 하루도 버틸 수 없으니까.'},
- {t:'c',quiz:'b-cp',qt:'여러 개의 독립된 선율을 동시에 조화롭게 엮는 바로크의 작곡 기법은?',p:'바흐 음악에서 가장 놀라운 점을 말해 볼까?',o:[
-  {x:'여러 선율이 따로따로 움직이는데도 서로 딱 맞물려요. 대위법이요!',r:25,ok:1,re:'바로 그것이오! 선율 하나하나가 독립된 목소리를 가지면서도 함께 조화를 이루지. 그걸 대위법이라 하오. 푸가는 그 꽃이고.'},
-  {x:'선율이 딱 하나뿐이라 단순해서 좋아요.',r:0,re:'음… 그건 수백 년 전 수도원의 성가 이야기 같구려. 내 음악엔 선율이 여럿 겹쳐 있다오.'},
-  {x:'규칙 없이 마음 가는 대로 쓴 것 같아요.',r:0,re:'오히려 반대요. 나는 음과 음 사이의 규칙을 아주 꼼꼼히 지킨다오.'}]},
+ {t:'c',quiz:'b-cp',k:3297915808,qt:'여러 개의 독립된 선율을 동시에 조화롭게 엮는 바로크의 작곡 기법은?',p:'바흐 음악에서 가장 놀라운 점을 말해 볼까?',o:[
+  {x:'여러 선율이 따로따로 움직이는데도 서로 딱 맞물려요. 대위법이요!',re:'바로 그것이오! 선율 하나하나가 독립된 목소리를 가지면서도 함께 조화를 이루지. 그걸 대위법이라 하오. 푸가는 그 꽃이고.'},
+  {x:'선율이 딱 하나뿐이라 단순해서 좋아요.',re:'음… 그건 수백 년 전 수도원의 성가 이야기 같구려. 내 음악엔 선율이 여럿 겹쳐 있다오.'},
+  {x:'규칙 없이 마음 가는 대로 쓴 것 같아요.',re:'오히려 반대요. 나는 음과 음 사이의 규칙을 아주 꼼꼼히 지킨다오.'}]},
  {t:'c',p:'바흐는 악보 끝에 ‘S.D.G.’라고 적곤 한다. 무엇이라고 말할까?',o:[
   {x:'‘오직 하느님께 영광(Soli Deo Gloria)’이라는 뜻이죠? 음악으로 신앙을 고백하시는군요.',r:25,re:'그렇소. 내가 쓰는 모든 음표는 결국 그분께 드리는 것이오. 그 생각을 하니 다시 힘이 나는군.'},
   {x:'멋있어 보이려고 쓰는 사인인가요?',r:-5,re:'허허, 사인이 아니라 기도라오.'}]},
@@ -1136,16 +1157,16 @@ const ERAS=[
   {x:'선생님 머릿속에는 이미 음악이 다 들리잖아요. 귀가 아니라 마음으로 작곡하시는 거예요.',r:25,re:'마음으로… 그래, 나는 악보만 봐도 소리가 들리지. 아직 내 안에는 쓰지 못한 음악이 너무 많아.'},
   {x:'힘드시면 이제 그만 쉬셔도 돼요.',r:-10,re:'쉬라고? …아니, 아직 나는 할 일이 남았네. 그만두기엔 너무 일러.'},
   {x:'디지털 보청기를 드릴게요. 블루투스도 돼요!',g:'buds'}]},
- {t:'clue',id:'c-clue',clip:'fur_elise',q:'베토벤의 피아노곡을 들어 보세요. 같은 선율이 두 번 나오는데, 무엇이 달라졌나요? 바로 이것이 하프시코드와 달리 피아노가 할 수 있는 일이에요.',o:[
-  {x:'처음엔 여리게, 두 번째는 세게 — 건반을 누르는 힘으로 셈여림을 조절했다',ok:1},{x:'두 번째에는 악기가 바이올린으로 바뀌었다'},{x:'아무것도 달라지지 않았다'}],
+ {t:'clue',id:'c-clue',k:916697775,clip:'fur_elise',q:'베토벤의 피아노곡을 들어 보세요. 같은 선율이 두 번 나오는데, 무엇이 달라졌나요? 바로 이것이 하프시코드와 달리 피아노가 할 수 있는 일이에요.',o:[
+  {x:'처음엔 여리게, 두 번째는 세게 — 건반을 누르는 힘으로 셈여림을 조절했다'},{x:'두 번째에는 악기가 바이올린으로 바뀌었다'},{x:'아무것도 달라지지 않았다'}],
   ex:'피아노의 원래 이름 <b>피아노포르테</b>는 ‘여리게-세게’라는 뜻이에요. 건반을 누르는 힘에 따라 소리 크기가 달라지지요. 방금 곡은 『엘리제를 위하여』의 첫 부분이에요.'},
  {t:'c',p:'소리를 다시 느낄 방법을 제안해 볼까?',o:[
   {x:'피아노에 막대를 대고 그 끝을 이로 물어 보세요. 소리의 진동이 뼈를 타고 전해질 거예요!',r:25,re:'(막대를 물고 건반을 쾅 내리친다) 오오…! 느껴진다! 소리가 뼈를 타고 들어와! (베토벤이 막대로 피아노의 진동을 느꼈다는 이야기가 전해져요.)'},
   {x:'대화는 공책에 글로 써서 나누면 돼요.',r:10,re:'그래, 사람들과는 필담 공책으로 이야기하지. 하지만 작곡에는 다른 방법이 필요하네.'}]},
- {t:'c',quiz:'c-form',qt:'베토벤이 활동한 고전주의 시대 음악의 특징은?',p:'베토벤이 묻는다. “하이든 선생님과 모차르트가 다듬은 우리 시대 음악의 핵심이 뭔지 아나?”',o:[
-  {x:'균형 잡힌 형식과 뚜렷한 구조예요. 소나타 형식처럼요!',r:20,ok:1,re:'그렇지! 튼튼한 건물 같은 형식이야. 나는 그 틀 안에 운명과 싸우는 뜨거운 감정을 담아 보겠네.'},
-  {x:'형식 없이 자유롭게 감정만 쏟아내는 거예요.',r:0,re:'감정은 중요하지. 하지만 우리 시대엔 먼저 형식을 단단히 쌓는다네. 그 자유는 다음 세대의 몫일 거야.'},
-  {x:'반주 없이 한 선율로 부르는 거예요.',r:0,re:'그건 중세 성가 이야기 아닌가? 우린 교향곡과 소나타를 쓰는 시대라네.'}]},
+ {t:'c',quiz:'c-form',k:3780718036,qt:'베토벤이 활동한 고전주의 시대 음악의 특징은?',p:'베토벤이 묻는다. “하이든 선생님과 모차르트가 다듬은 우리 시대 음악의 핵심이 뭔지 아나?”',o:[
+  {x:'균형 잡힌 형식과 뚜렷한 구조예요. 소나타 형식처럼요!',re:'그렇지! 튼튼한 건물 같은 형식이야. 나는 그 틀 안에 운명과 싸우는 뜨거운 감정을 담아 보겠네.'},
+  {x:'형식 없이 자유롭게 감정만 쏟아내는 거예요.',re:'감정은 중요하지. 하지만 우리 시대엔 먼저 형식을 단단히 쌓는다네. 그 자유는 다음 세대의 몫일 거야.'},
+  {x:'반주 없이 한 선율로 부르는 거예요.',re:'그건 중세 성가 이야기 아닌가? 우린 교향곡과 소나타를 쓰는 시대라네.'}]},
  {t:'gate'},
  {t:'s',x:'이제 머릿속 교향곡의 첫 네 음을 꺼내야 해. 운명이 문을 두드리는 소리 말이야! 소리 없이 진동만 보고, 그 리듬을 두드려 주게.'},
  {t:'game'},
@@ -1160,13 +1181,13 @@ const ERAS=[
   {x:'고향이 많이 그리우시죠. 어릴 때 듣던 폴란드 춤곡을 떠올려 보시면 어떨까요?',r:25,re:'마주르카… 시골 마을 축제에서 들었던 그 리듬. 둘째, 셋째 박에 ‘쿵’ 하고 힘이 실리던… 가슴이 다시 뛰는군요.'},
   {x:'파리가 훨씬 화려하니 고향은 잊으세요.',r:-10,re:'잊을 수가 없어요. 떠날 때 친구들이 건네준 폴란드의 흙을 아직도 간직하고 있는걸요.'},
   {x:'비행기 타면 두 시간이면 바르샤바예요!',g:'plane'}]},
- {t:'clue',id:'r-clue',clip:'nocturne',q:'쇼팽의 녹턴을 들어 보세요. 쇼팽이 ‘피아노의 시인’이라고 불리는 이유는 무엇일까요?',o:[
-  {x:'피아노로 노래하듯 섬세한 감정을 표현해서',ok:1},{x:'교향곡과 오페라를 가장 많이 써서'},{x:'직접 시집을 써서 출판해서'}],
+ {t:'clue',id:'r-clue',k:2596306646,clip:'nocturne',q:'쇼팽의 녹턴을 들어 보세요. 쇼팽이 ‘피아노의 시인’이라고 불리는 이유는 무엇일까요?',o:[
+  {x:'피아노로 노래하듯 섬세한 감정을 표현해서'},{x:'교향곡과 오페라를 가장 많이 써서'},{x:'직접 시집을 써서 출판해서'}],
   ex:'쇼팽은 작품 대부분을 피아노를 위해 썼어요. <b>녹턴(야상곡)</b>은 ‘밤의 노래’라는 뜻으로, 피아노가 사람 목소리처럼 노래하지요. 방금 곡은 녹턴 Op.9-2예요.'},
- {t:'c',quiz:'r-roman',qt:'낭만주의 음악의 특징으로 알맞은 것은?',p:'쇼팽이 묻는다. “우리 시대의 음악가들이 가장 중요하게 여기는 건 무엇일까요?”',o:[
-  {x:'작곡가 자신의 감정과 상상, 그리고 민족의 정서를 자유롭게 표현하는 것',r:20,ok:1,re:'네. 우리 낭만주의 음악가들은 마음속 목소리를 따르지요. 저에겐 그게 폴란드예요.'},
-  {x:'여러 선율을 엄격한 규칙으로 엮는 대위법',r:0,re:'그건 바흐 선생님의 시대에 더 가깝네요. 물론 저도 연주회 전엔 꼭 바흐를 연습하지만요!'},
-  {x:'세상의 모든 소음을 그대로 음악으로 쓰는 것',r:0,re:'소음을요? 흥미롭지만… 그건 먼 미래의 누군가가 할 생각 같네요.'}]},
+ {t:'c',quiz:'r-roman',k:2088618049,qt:'낭만주의 음악의 특징으로 알맞은 것은?',p:'쇼팽이 묻는다. “우리 시대의 음악가들이 가장 중요하게 여기는 건 무엇일까요?”',o:[
+  {x:'작곡가 자신의 감정과 상상, 그리고 민족의 정서를 자유롭게 표현하는 것',re:'네. 우리 낭만주의 음악가들은 마음속 목소리를 따르지요. 저에겐 그게 폴란드예요.'},
+  {x:'여러 선율을 엄격한 규칙으로 엮는 대위법',re:'그건 바흐 선생님의 시대에 더 가깝네요. 물론 저도 연주회 전엔 꼭 바흐를 연습하지만요!'},
+  {x:'세상의 모든 소음을 그대로 음악으로 쓰는 것',re:'소음을요? 흥미롭지만… 그건 먼 미래의 누군가가 할 생각 같네요.'}]},
  {t:'doc',title:'슈투트가르트에서 쓴 일기',src:'1831년 9월 · 쇼팽의 일기장',x:'고향으로 돌아가지 못한 채 여행 중이던 스물한 살의 쇼팽은, 바르샤바가 러시아군에게 함락되었다는 소식을 듣고 가족과 친구들을 걱정하며 절망과 분노를 일기에 쏟아냈어요. 『혁명 에튀드』는 이 무렵의 감정과 함께 이야기되곤 해요.'},
  {t:'c',p:'기침하는 쇼팽을 보며',o:[
   {x:'오늘은 무리하지 마시고, 짧고 즐거운 곡부터 떠올려 봐요.',r:25,re:'짧고 즐거운 곡… 그러고 보니 상드 부인의 강아지가 제 꼬리를 쫓아 빙글빙글 돌던 모습이 떠오르네요.'},
@@ -1186,12 +1207,12 @@ const ERAS=[
   {x:'그건 그냥 장난 아닌가요?',r:-5,re:'하하, 그런 말 많이 들어. 그래도 한번 진지하게 귀 기울여 볼래?'},
   {x:'AI 스피커한테 4분 33초짜리 노래를 만들어 달라고 해요!',g:'speaker'}]},
  {t:'s',x:'얼마 전 하버드 대학교의 ‘무향실’에 들어가 봤어. 벽이 소리를 전부 빨아들여서 메아리가 전혀 없는 방이지. 그런데도 소리가 두 개 들리더라. 하나는 높고, 하나는 낮은 소리.'},
- {t:'c',quiz:'x-anech',qt:'무향실에서 존 케이지가 들은 두 소리의 정체는?',p:'케이지가 들은 두 소리는 무엇이었을까?',o:[
-  {x:'케이지 자신의 몸에서 나는 소리 (신경계와 피가 흐르는 소리)',r:20,ok:1,re:'맞아! 기술자가 그렇게 설명해 줬어. 살아 있는 한, 우리는 결코 완벽한 침묵을 들을 수 없는 거야.'},
-  {x:'옆방에서 틀어 놓은 라디오 소리',r:0,re:'그 방은 바깥 소리도 완전히 막혀 있었어. 소리는 훨씬 가까운 곳에서 나고 있었지.'},
-  {x:'벽 속에 숨은 유령의 노랫소리',r:0,re:'하하, 그랬다면 더 재밌는 곡이 나왔겠다! 정답은 훨씬 가까이에 있어.'}]},
- {t:'clue',id:'x-clue',clip:'tone_row',q:'케이지: “내 스승이었던 쇤베르크 선생님의 ‘12음 기법’ 음악이야. 들어 보면 어떤 느낌이 드니?”',o:[
-  {x:'중심이 되는 으뜸음(조성)이 잘 느껴지지 않는다',ok:1},{x:'도레미파솔 장조라서 아주 밝고 익숙하다'},{x:'한 음만 계속 반복된다'}],
+ {t:'c',quiz:'x-anech',k:3132846104,qt:'무향실에서 존 케이지가 들은 두 소리의 정체는?',p:'케이지가 들은 두 소리는 무엇이었을까?',o:[
+  {x:'케이지 자신의 몸에서 나는 소리 (신경계와 피가 흐르는 소리)',re:'맞아! 기술자가 그렇게 설명해 줬어. 살아 있는 한, 우리는 결코 완벽한 침묵을 들을 수 없는 거야.'},
+  {x:'옆방에서 틀어 놓은 라디오 소리',re:'그 방은 바깥 소리도 완전히 막혀 있었어. 소리는 훨씬 가까운 곳에서 나고 있었지.'},
+  {x:'벽 속에 숨은 유령의 노랫소리',re:'하하, 그랬다면 더 재밌는 곡이 나왔겠다! 정답은 훨씬 가까이에 있어.'}]},
+ {t:'clue',id:'x-clue',k:3316835545,clip:'tone_row',q:'케이지: “내 스승이었던 쇤베르크 선생님의 ‘12음 기법’ 음악이야. 들어 보면 어떤 느낌이 드니?”',o:[
+  {x:'중심이 되는 으뜸음(조성)이 잘 느껴지지 않는다'},{x:'도레미파솔 장조라서 아주 밝고 익숙하다'},{x:'한 음만 계속 반복된다'}],
   ex:'<b>12음 기법</b>은 한 옥타브의 12개 음을 모두 한 번씩 쓴 ‘음렬’로 곡을 만드는 방법이에요. 어느 한 음이 중심이 되지 않도록 하지요. 케이지는 젊은 시절 실제로 쇤베르크에게 배웠어요.'},
  {t:'c',p:'걱정하는 케이지를 응원하자.',o:[
   {x:'‘음악이란 무엇인가’를 다시 생각하게 만드는 것 자체가 멋진 도전이에요.',r:25,re:'고마워! 음악의 경계를 넓히는 것, 그게 내가 하고 싶은 일이야.'},
@@ -1259,25 +1280,31 @@ function screenTitle(){
       <form id="fStart" class="start-form" autocomplete="off">
         <label for="inName">이름</label><input id="inName" maxlength="12" required placeholder="실명 · 예: 김하모">
         <label for="inCls">학번·반</label><input id="inCls" maxlength="20" required placeholder="예: 2학년 3반 15번">
-        <button class="btn primary" type="submit">새로 시작</button>
+        <div class="acts" style="grid-column:1/-1"><button class="btn primary" type="submit">새로 시작</button><button class="btn" type="button" id="btnCont">이어하기</button></div>
         <p class="msg bad" id="fMsg" style="grid-column:1/-1;margin:0" aria-live="polite"></p>
       </form>
       ${canSave?'':'<p class="msg bad">이 브라우저는 진행 기록을 저장하지 못해요(시크릿 창이거나 저장이 막혀 있어요). 창을 닫으면 처음부터 다시 해야 해요.</p>'}
-      ${has?`<button class="btn" id="btnCont">이어하기 — ${esc(S.name)} · 크리스탈 ${n}/5</button>`:''}
-      <div class="title-links"><button id="tCodex">음악 도감</button><button id="tTeacher">선생님 페이지</button>${S.finished?'<button id="tCert">수료증 다시 보기</button>':''}</div>
+      <div class="title-links"><button id="tCodex">음악 도감</button><button id="tTeacher">선생님 페이지</button></div>
     </div>
     <div class="cassette" aria-hidden="true"><div class="label"><b>타임 하모니 C-90</b><span>SIDE A · 1150 → 1952</span><i class="stripe"></i></div><div class="win"><i class="reel"></i><i class="reel"></i></div><div class="foot"></div></div>
   </section>`;
-  $('#fStart').onsubmit=e=>{e.preventDefault();const name=cleanName($('#inName').value),cls=cleanName($('#inCls').value),msg=$('#fMsg');
-    if(name.length<2){msg.textContent='이름을 두 글자 이상 실명으로 써 주세요.';$('#inName').focus();return}
-    if(!/[0-9]/.test(cls)){msg.textContent='학번·반에 숫자를 넣어 써 주세요. 예: 2학년 3반 15번';$('#inCls').focus();return}
-    if(badName(name)||badName(cls)){msg.textContent='수료증에 들어갈 이름이에요. 바른 말로 실명을 써 주세요.';$('#inName').select();return}
-    const go=()=>{let a=1;try{a=(+localStorage.getItem(ATT_KEY)||0)+1;localStorage.setItem(ATT_KEY,String(a))}catch(err){}
-      S=freshState(name,cls);S.attempt=a;save();updateHud();startPrologue()};
-    if(has&&!S.finished) confirmBox(`${esc(S.name)}의 진행 기록(크리스탈 ${n}개)을 지우고 새로 시작할까요?`,'새로 시작','취소',go); else go();};
-  if(has) $('#btnCont').onclick=()=>{if(S.finished) screenCert(); else screenMap()};
+  const readForm=()=>{const name=cleanName($('#inName').value).slice(0,12),cls=cleanName($('#inCls').value),msg=$('#fMsg');
+    if(name.length<2){msg.textContent='이름을 두 글자 이상 실명으로 써 주세요.';$('#inName').focus();return null}
+    if(badName(name)||badName(cls)){msg.textContent='수료증에 들어갈 이름이에요. 바른 말로 실명을 써 주세요.';$('#inName').select();return null}
+    if(oddName(name)){msg.textContent='이름은 한글(또는 영어) 실명으로 써 주세요. 자음·모음만 쓰거나 같은 글자를 세 번 이어 쓸 수 없어요.';$('#inName').select();return null}
+    if(!/[0-9]/.test(cls)){msg.textContent='학번·반에 숫자를 넣어 써 주세요. 예: 2학년 3반 15번';$('#inCls').focus();return null}
+    msg.textContent='';return{name,cls,id:slotId(name,cls)}};
+  $('#fStart').onsubmit=e=>{e.preventDefault();const f=readForm();if(!f)return;
+    const old=store.get(SLOTS_KEY,{})[f.id];
+    const go=()=>{const at=store.get(ATT_KEY,{});at[f.id]=(at[f.id]||0)+1;store.set(ATT_KEY,at);
+      S=freshState(f.name,f.cls);S.attempt=at[f.id];save();updateHud();startPrologue()};
+    if(old&&!old.finished) confirmBox(`이 이름으로 진행 중인 여행(크리스탈 ${(old.crystals||[]).filter(Boolean).length}개)이 있어요. 처음부터 다시 할까요? 도전 회차가 올라가요.`,'처음부터','취소',go); else go();};
+  /* 이어하기: 이름과 학번을 똑같이 써야 열림 → 공유 PC에서 친구 기록을 망치는 장난 방지 */
+  $('#btnCont').onclick=()=>{const f=readForm();if(!f)return;const sl=store.get(SLOTS_KEY,{}),slot=sl[f.id];
+    if(!slot){$('#fMsg').textContent='이 이름과 학번으로 저장된 여행이 없어요. 띄어쓰기·숫자를 확인하거나 새로 시작하세요.';return}
+    const bad=slot._sig!==sigOf(slot); S=Object.assign(freshState(),slot); if(bad) S.tampered=true; save(); updateHud();
+    if(S.finished) screenCert(); else screenMap()};
   $('#tCodex').onclick=()=>openCodex(); $('#tTeacher').onclick=teacherGate;
-  if(S.finished) $('#tCert').onclick=screenCert;
 }
 
 /* =========================================================
@@ -1533,8 +1560,9 @@ function choose(n){
 function pick(n,i){
   const o=n.o[i];
   if(o.g){E.removed.add(E.idx+':'+i);glitch(o.g,()=>choose(n));return}
-  if(n.quiz) recordQuiz(n.quiz,E.i,n.qt,!!o.ok);
-  if(o.r){setRes(E.res+o.r,o.r); sfx(o.r>0?'blip':'buzz')}
+  let r=o.r||0;
+  if(n.quiz){const ok=isAns(n.quiz,n.k,o.x);recordQuiz(n.quiz,E.i,n.qt,ok);r=ok?20:0}
+  if(r){setRes(E.res+r,r); sfx(r>0?'blip':'buzz')}
   vnSay(compP(),o.re,advance);
 }
 function clue(n){
@@ -1546,9 +1574,9 @@ function clue(n){
   armChoices(d);
   $$('.choice',d).forEach(b=>b.onclick=()=>{
     if(b.dataset.done) return;
-    const i=+b.dataset.i, ok=!!n.o[i].ok;
+    const i=+b.dataset.i, ok=isAns(n.id,n.k,n.o[i].x);
     recordQuiz(n.id,E.i,n.q.replace(/^케이지: “|”$/g,''),ok);
-    $$('.choice',d).forEach(x=>{x.disabled=true;x.dataset.done='1';if(n.o[+x.dataset.i].ok)x.classList.add('right')}); if(!ok) b.classList.add('wrong');
+    $$('.choice',d).forEach(x=>{x.disabled=true;x.dataset.done='1';if(isAns(n.id,n.k,n.o[+x.dataset.i].x))x.classList.add('right')}); if(!ok) b.classList.add('wrong');
     if(ok){setRes(E.res+10,10);sfx('blip')} else sfx('buzz');
     $('#cEx').innerHTML=`<div class="explain"><b>${ok?'정답이에요!':'아쉬워요. 정답은 초록색 보기예요.'}</b> ${n.ex}</div><div class="box-acts" style="margin-top:10px"><button class="btn primary" id="go2">계속</button></div>`;
     $('#go2').onclick=advance; $('#go2').focus({preventScroll:true});
@@ -1601,7 +1629,7 @@ function gameShell(eyebrow,title,rule,body){
 
 /* ① 중세 — 네우마 기록 퍼즐 */
 function gameNeume(done){
-  const R=[['C4','D4','F4','E4'],['D4','F4','G4','A4','G4'],['F4','G4','A4','G4','F4','D4']];
+  const R=JSON.parse(atob('XV0iNEQiLCI0RiIsIjRHIiwiNEEiLCI0RyIsIjRGIlssXSI0RyIsIjRBIiwiNEciLCI0RiIsIjREIlssXSI0RSIsIjRGIiwiNEQiLCI0QyJbWw==').split('').reverse().join(''));
   const P=['C4','D4','E4','F4','G4','A4'], SY={C4:['ut','도'],D4:['re','레'],E4:['mi','미'],F4:['fa','파'],G4:['sol','솔'],A4:['la','라']};
   let r=0,cur=[],tries=0,marks=null;
   const y=n=>150-P.indexOf(n)*14;
@@ -1638,7 +1666,7 @@ function gameNeume(done){
       $('#msg').className='msg ok'; $('#msg').textContent=r<2?'정확해요! 다음 구절로 넘어가요.':'세 구절 모두 기록했어요!';
       setTimeout(()=>{r++;tries=0;cur=r<3?[R[r][0]]:[];marks=null; if(r<3) draw(); else done()},1300);
     } else {
-      tries++; sfx('buzz'); draw(); const bad=marks.filter(x=>!x).length;
+      recordGame('m-neume-'+r,0,`네우마 퍼즐 ${r+1}라운드`,false); tries++; sfx('buzz'); draw(); const bad=marks.filter(x=>!x).length;
       $('#msg').className='msg bad'; $('#msg').textContent=`빨간 네우마 ${bad}개가 달라요. 다시 듣고 고쳐 보세요. (‘하나 지우기’로 뒤에서부터 지울 수 있어요)`;
     }
   }
@@ -1669,7 +1697,7 @@ function gameCounterpoint(done){
     $$('.cp-cell').forEach(c=>c.onclick=()=>{const b=+c.dataset.b;if(locked(b))return;low[b]=c.dataset.n;errBeats.clear();play2('one',[b]);
       const ok=info(up[b],low[b]).ok;draw(ok?'':`${b+1}번째 박이 빨간색이에요. 위 음과 부딪혀요. 다른 칸을 골라 보세요.`,ok?'':'bad')});
     $('#hear').onclick=()=>play2('all');
-    $('#hint').onclick=()=>{const b=up.findIndex((u,k)=>!low[k]);if(b<0)return;hinted=true;const good=ROWS.filter(n=>{const x=info(up[b],n);return x.ok&&!x.perfect});low[b]=good[Math.floor(Math.random()*good.length)]||ROWS.find(n=>info(up[b],n).ok);play2('one',[b]);draw(`힌트: ${b+1}번째 박에 ${low[b].replace(/\d/,'')}(${KO[low[b][0]]}) 음을 놓았어요. 3도나 6도는 특히 부드럽게 어울려요.`)};
+    $('#hint').onclick=()=>{const b=up.findIndex((u,k)=>!low[k]);if(b<0)return;hinted=true;recordGame('b-cp-'+r,1,`대위법 ${r+1}라운드 (힌트 사용)`,false);const good=ROWS.filter(n=>{const x=info(up[b],n);return x.ok&&!x.perfect});low[b]=good[Math.floor(Math.random()*good.length)]||ROWS.find(n=>info(up[b],n).ok);play2('one',[b]);draw(`힌트: ${b+1}번째 박에 ${low[b].replace(/\d/,'')}(${KO[low[b][0]]}) 음을 놓았어요. 3도나 6도는 특히 부드럽게 어울려요.`)};
     $('#clear').onclick=()=>{fresh();errBeats.clear();draw()};
     $('#check').onclick=check;
   }
@@ -1691,7 +1719,7 @@ function gameCounterpoint(done){
       $('#check').disabled=true; $('#hint').disabled=true;
       const nx=document.createElement('button');nx.className='btn primary';nx.textContent=r===0?'다음 라운드':'계속';$('#msg').after(nx);
       nx.onclick=()=>{r++;tries=0;hinted=false;errBeats.clear();if(r<2){fresh();draw()}else done()};
-    } else {tries++;sfx('buzz');draw(`<ul class="errs">${errs.map(e=>`<li>${e}</li>`).join('')}</ul>`,'bad')}
+    } else {recordGame('b-cp-'+r,1,`대위법 ${r+1}라운드`,false);tries++;sfx('buzz');draw(`<ul class="errs">${errs.map(e=>`<li>${e}</li>`).join('')}</ul>`,'bad')}
   }
   fresh(); draw();
 }
@@ -1726,7 +1754,7 @@ function gameRhythm(done){
       msg.className='msg ok';msg.innerHTML='완벽해요! 베토벤의 머릿속 교향곡이 깨어납니다. <b>이제 소리가 돌아와요.</b>';
       setTimeout(()=>playClip('beethoven5'),600);
       const b=document.createElement('button');b.className='btn primary';b.textContent='계속';msg.after(b);b.onclick=()=>{cleanup();done()};b.focus();
-    } else {tries++;sfx('buzz');msg.className='msg bad';
+    } else {recordGame('c-rhythm',2,'운명 리듬 두드리기',false);tries++;sfx('buzz');msg.className='msg bad';
       msg.textContent=d[3]<Math.max(550,s*2)?'마지막 음을 더 길~게 꾹 눌러 보세요. 앞의 세 번은 짧게 톡톡톡!':s>=480?'앞의 세 번은 더 짧게 톡, 톡, 톡 눌러 보세요.':'세 번을 같은 간격으로 눌러 보세요.';
       setTimeout(()=>{presses=[];drawTl();ready=true;tap.disabled=false;tap.focus()},1600)}
   }
@@ -1740,13 +1768,17 @@ function gameRhythm(done){
 }
 
 /* ④ 낭만 — 감정 매칭 감상 */
-function gameEmotion(done){
+function emoQuestions(){
   const EM=['분노와 격정 — 폭풍처럼 몰아친다','평화로움 — 잔잔한 자장가 같다','장난스러움 — 빙글빙글 귀엽다','지루함 — 아무 변화가 없다'];
   const Q=[
-    {id:'r-emo1',clip:'revolutionary',q:'첫 번째 곡을 들어 보세요. 이 음악에 담긴 감정은?',qt:'혁명 에튀드에 담긴 감정',o:EM,a:0,ex:'『혁명 에튀드』(Op.10-12). 1831년 러시아군에게 바르샤바가 함락되었다는 소식을 들은 무렵에 썼다고 알려져 있어요. 왼손의 빠른 하행 음형이 폭풍처럼 몰아쳐요.'},
-    {id:'r-emo2',clip:'waltz',q:'두 번째 곡이에요. 이 음악에 담긴 감정은?',qt:'강아지 왈츠에 담긴 감정',o:EM,a:2,ex:'『강아지 왈츠』(Op.64-1). 조르주 상드의 강아지가 제 꼬리를 쫓아 빙글빙글 도는 모습에서 영감을 받았다고 전해져요. 짧아서 ‘1분 왈츠’라고도 불러요.'},
-    {id:'r-emo3',clip:'waltz',q:'왈츠의 반주는 ‘쿵-짝-짝’을 되풀이해요. 왈츠는 몇 박자 춤곡일까요?',qt:'왈츠의 박자',o:['2박자','3박자','4박자'],a:1,ex:'왈츠는 <b>3박자</b> 춤곡이에요. 첫 박의 낮은 음 ‘쿵’ 뒤에 화음 ‘짝, 짝’이 이어져요. 쇼팽이 사랑한 폴란드 춤곡 마주르카도 3박자랍니다.'}
+    {id:'r-emo1',clip:'revolutionary',q:'첫 번째 곡을 들어 보세요. 이 음악에 담긴 감정은?',qt:'혁명 에튀드에 담긴 감정',o:EM,k:4054721079,ex:'『혁명 에튀드』(Op.10-12). 1831년 러시아군에게 바르샤바가 함락되었다는 소식을 들은 무렵에 썼다고 알려져 있어요. 왼손의 빠른 하행 음형이 폭풍처럼 몰아쳐요.'},
+    {id:'r-emo2',clip:'waltz',q:'두 번째 곡이에요. 이 음악에 담긴 감정은?',qt:'강아지 왈츠에 담긴 감정',o:EM,k:2129524756,ex:'『강아지 왈츠』(Op.64-1). 조르주 상드의 강아지가 제 꼬리를 쫓아 빙글빙글 도는 모습에서 영감을 받았다고 전해져요. 짧아서 ‘1분 왈츠’라고도 불러요.'},
+    {id:'r-emo3',clip:'waltz',q:'왈츠의 반주는 ‘쿵-짝-짝’을 되풀이해요. 왈츠는 몇 박자 춤곡일까요?',qt:'왈츠의 박자',o:['2박자','3박자','4박자'],k:2432917299,ex:'왈츠는 <b>3박자</b> 춤곡이에요. 첫 박의 낮은 음 ‘쿵’ 뒤에 화음 ‘짝, 짝’이 이어져요. 쇼팽이 사랑한 폴란드 춤곡 마주르카도 3박자랍니다.'}
   ];
+  return Q;
+}
+function gameEmotion(done){
+  const Q=emoQuestions();
   let k=0;
   function draw(){
     const q=Q[k];
@@ -1754,7 +1786,7 @@ function gameEmotion(done){
       `<div class="panel qcard"><p class="line" style="font-size:18px;min-height:0">${q.q}</p><div class="acts"><button class="btn primary" id="play">▶ ${CLIPS[q.clip].title} 듣기</button></div>
        <div class="opts">${(q.ord=q.ord||shuffle(q.o.map((_,i)=>i))).map(i=>`<button class="opt" data-i="${i}">${q.o[i]}</button>`).join('')}</div><div id="ex"></div></div>`);
     $('#play').onclick=()=>playClip(q.clip); if(k<2) playClip(q.clip);
-    $$('.opt').forEach(b=>b.onclick=()=>{const i=+b.dataset.i,ok=i===q.a;recordQuiz(q.id,3,q.qt,ok);
+    $$('.opt').forEach(b=>b.onclick=()=>{const i=+b.dataset.i,ok=isAns(q.id,q.k,q.o[i]);recordQuiz(q.id,3,q.qt,ok);
       if(ok){sfx('chime');$$('.opt').forEach(x=>x.disabled=true);b.classList.add('right');
         $('#ex').innerHTML=`<div class="explain"><b>정답!</b> ${q.ex}</div><div class="acts" style="margin-top:10px"><button class="btn primary" id="nx">${k<2?'다음 곡':'계속'}</button></div>`;
         $('#nx').onclick=()=>{k++;if(k<3)draw();else{stopClip();done()}};$('#nx').focus();
@@ -1799,7 +1831,7 @@ function gameSilence(done){
     window.addEventListener('keydown',fail,true); window.addEventListener('pointerdown',fail,true); gameCleanup=cleanup;
   }
   function cleanup(){clearInterval(iv);armed=false;window.removeEventListener('keydown',fail,true);window.removeEventListener('pointerdown',fail,true);stopClip()}
-  function fail(e){ if(!armed) return; e.preventDefault(); e.stopPropagation(); cleanup(); failed++; sfx('buzz');
+  function fail(e){ if(!armed) return; e.preventDefault(); e.stopPropagation(); cleanup(); failed++; recordGame('x-silence',4,`4분 33초 끝까지 듣기 (${total()===273?'원곡 길이':'33초판'})`,false); sfx('buzz');
     setup(`<div class="explain" style="background:#2a1720;color:#ffd0c8"><b style="color:#ff9d8f">앗, 손이 움직였어요!</b> 케이지라면 “방금 그 소리도 음악이야!”라고 웃었을 거예요. 그래도 이번엔 끝까지 귀 기울여 볼까요?</div>`) }
   function success(){
     cleanup(); recordGame('x-silence',4,`4분 33초 끝까지 듣기 (${total()===273?'원곡 길이':'33초판'})`,failed===0); sfx('chime');
@@ -1842,9 +1874,9 @@ const Q_TOTAL=13, G_TOTAL=7;
 function resultInfo(){
   const st=stats(), n=S.crystals.filter(Boolean).length, fin=!!S.finished, docs=S.docs.filter(Boolean).length, att=S.attempt||1;
   const date=new Date(S.finished||Date.now()).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
-  const code=vcode([S.name,S.cls,date,st.min,att,st.qOk,st.qN,st.gOk,st.gN,n,docs,S.glitches]);
+  const code=vcode([S.name,S.cls,date,st.min,att,st.qOk,st.qN,st.gOk,st.gN,n,docs,S.glitches,S.tampered?1:0]);
   const miss=fin&&(st.qN<Q_TOTAL||st.gN<G_TOTAL);
-  const text=`[타임 하모니 ${fin?'수료':'중간 기록'}] ${S.name} (${S.cls})\n날짜: ${date} / 플레이 약 ${st.min}분 / 도전 ${att}회차\n음악사 퀴즈 정답률: ${st.pct}% (${st.qOk}/${st.qN})\n미니게임 한 번에 성공: ${st.gOk}/${st.gN}\n하모니 크리스탈: ${n}/5 / 사료: ${docs}/5 / 타임라인 균열: ${S.glitches}회\n획득 카드: ${CARDS.filter(c=>S.crystals[c.era]).map(c=>c.name).join(', ')||'없음'}${miss?`\n※ 기록이 빠진 활동: 퀴즈 ${st.qN}/${Q_TOTAL}, 미니게임 ${st.gN}/${G_TOTAL}`:''}\n확인번호: ${code}`;
+  const text=`[타임 하모니 ${fin?'수료':'중간 기록'}] ${S.name} (${S.cls})\n날짜: ${date} / 플레이 약 ${st.min}분 / 도전 ${att}회차\n음악사 퀴즈 정답률: ${st.pct}% (${st.qOk}/${st.qN})\n미니게임 한 번에 성공: ${st.gOk}/${st.gN}\n하모니 크리스탈: ${n}/5 / 사료: ${docs}/5 / 타임라인 균열: ${S.glitches}회\n획득 카드: ${CARDS.filter(c=>S.crystals[c.era]).map(c=>c.name).join(', ')||'없음'}${miss?`\n※ 기록이 빠진 활동: 퀴즈 ${st.qN}/${Q_TOTAL}, 미니게임 ${st.gN}/${G_TOTAL}`:''}${S.tampered?'\n※ 저장 기록이 바뀐 흔적이 있어요':''}\n확인번호: ${code}`;
   return {st,n,fin,docs,att,date,code,miss,text};
 }
 function parseResult(t){
@@ -1853,8 +1885,8 @@ function parseResult(t){
   const m2=/정답률: (\d+)% \((\d+)\/(\d+)\)/.exec(L[2]||''), m3=/(\d+)\/(\d+)/.exec(L[3]||''), m4=/크리스탈: (\d)\/5 \/ 사료: (\d)\/5 \/ 타임라인 균열: (\d+)회/.exec(L[4]||''), mc=/확인번호: (TH-[0-9A-Z]+-[0-9A-Z]+)/.exec(t);
   if(!(m0&&m1&&m2&&m3&&m4&&mc)) return null;
   const qOk=+m2[2],qN=+m2[3], pctOk=+m2[1]===(qN?Math.round(qOk/qN*100):0);
-  const ok=pctOk&&vcode([m0[1],m0[2],m1[1],+m1[2],+m1[3],qOk,qN,+m3[1],+m3[2],+m4[1],+m4[2],+m4[3]])===mc[1];
-  return {ok,name:m0[1],cls:m0[2],pct:m2[1],q:`${qOk}/${qN}`,g:`${m3[1]}/${m3[2]}`,att:m1[3],min:m1[2]};
+  const ok=pctOk&&vcode([m0[1],m0[2],m1[1],+m1[2],+m1[3],qOk,qN,+m3[1],+m3[2],+m4[1],+m4[2],+m4[3],/저장 기록이 바뀐 흔적/.test(t)?1:0])===mc[1];
+  return {ok,t:/저장 기록이 바뀐 흔적/.test(t),name:m0[1],cls:m0[2],pct:m2[1],q:`${qOk}/${qN}`,g:`${m3[1]}/${m3[2]}`,att:m1[3],min:m1[2]};
 }
 function screenCert(){
   endGame();
@@ -1869,7 +1901,7 @@ function screenCert(){
     <dl class="stats"><div><dt>음악사 퀴즈 정답률</dt><dd>${st.pct}%<small>${st.qOk}/${st.qN}</small></dd></div><div><dt>미니게임 한 번에 성공</dt><dd>${st.gOk}<small>/${st.gN}</small></dd></div><div><dt>하모니 크리스탈</dt><dd>${n}<small>/5</small></dd></div><div><dt>수집한 사료</dt><dd>${S.docs.filter(Boolean).length}<small>/5</small></dd></div></dl>
     <div class="cert-cards">${ERAS.map((e,i)=>{const c=CARDS.find(x=>x.era===i&&!x.bonus);return`<div class="${S.crystals[i]?'':'off'}">${gem(ERA_HEX[i],S.crystals[i],28)}<b>${c.name.split(' ').slice(-1)[0]}</b><span>${c.works[0]}</span></div>`}).join('')}</div>
     <div class="tbl-wrap"><table><thead><tr><th>시대</th><th>퀴즈 정답</th><th>미니게임 첫 성공</th><th>크리스탈</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="cert-foot"><span>${date}<br>플레이 시간 약 ${st.min}분 · 타임라인 균열 ${S.glitches}회 · 이 기기 ${R.att}번째 도전${R.miss?`<br><b style="color:#b23a2e">기록이 빠진 활동이 있어요 (퀴즈 ${st.qN}/${Q_TOTAL}, 미니게임 ${st.gN}/${G_TOTAL})</b>`:""}</span><span class="seal">타임<br>하모니</span></div>
+    <div class="cert-foot"><span>${date}<br>플레이 시간 약 ${st.min}분 · 타임라인 균열 ${S.glitches}회 · 이 기기 ${R.att}번째 도전${S.tampered?'<br><b style="color:#b23a2e">저장 기록이 바뀐 흔적이 있어요</b>':''}${R.miss?`<br><b style="color:#b23a2e">기록이 빠진 활동이 있어요 (퀴즈 ${st.qN}/${Q_TOTAL}, 미니게임 ${st.gN}/${G_TOTAL})</b>`:""}</span><span class="seal">타임<br>하모니</span></div>
   </article>
   <div class="after no-print">
     <div class="acts"><button class="btn primary" id="copy">결과를 글로 복사</button>${window.self===window.top?'<button class="btn" id="print">인쇄하기</button>':''}<button class="btn" id="codex">음악 도감</button>${fin?'':'<button class="btn" id="map">타임라인으로</button>'}<button class="btn" id="home">처음 화면</button></div>
@@ -1902,8 +1934,10 @@ function openCodex(after){
 /* 선생님 페이지 잠금: 정답표·기록 지우기를 학생이 못 보게. 비밀번호 자체는 코드에 없고 해시만 있음 */
 const T_HASH=678882161;   // 선생님 비밀번호의 해시값 (비밀번호를 바꾸려면 새 해시로 교체)
 const tKey=v=>fnv('teacher|'+String(v).trim()+'|'+SALT,2166136261);
-let tFails=0, tLockUntil=0;
-function teacherOk(){try{return sessionStorage.getItem('timeHarmony.t')==='1'}catch(e){return false}}
+const TLOCK_KEY='timeHarmony.tlock';
+const tToken=exp=>exp+':'+fnv(SALT+'|t|'+exp,0x9747b28c);
+function teacherOk(){try{const v=sessionStorage.getItem('timeHarmony.t')||'',exp=+v.split(':')[0];return exp>Date.now()&&v===tToken(exp)}catch(e){return false}}
+function teacherLock(){try{sessionStorage.removeItem('timeHarmony.t')}catch(e){}}
 function teacherGate(){
   if(teacherOk()) return screenTeacher();
   endGame(); stopClip(); pageMode(); E=null; V=null; setEra('map');
@@ -1915,17 +1949,20 @@ function teacherGate(){
     <div class="acts"><button class="btn" id="tBack">처음 화면으로</button></div></section></section>`;
   $('#tPw').focus(); $('#tBack').onclick=screenTitle;
   $('#tForm').onsubmit=e=>{e.preventDefault();const m=$('#tMsg');
-    if(Date.now()<tLockUntil){m.textContent=`잠시 뒤에 다시 시도하세요 (${Math.ceil((tLockUntil-Date.now())/1000)}초).`;return}
-    if(tKey($('#tPw').value)===T_HASH){try{sessionStorage.setItem('timeHarmony.t','1')}catch(err){}screenTeacher();return}
-    tFails++; $('#tPw').value=''; if(tFails>=3){tLockUntil=Date.now()+30000;tFails=0;m.textContent='3번 틀렸어요. 30초 뒤에 다시 시도하세요.'}else m.textContent='비밀번호가 맞지 않아요.'};
+    const L=store.get(TLOCK_KEY,{fails:0,until:0});
+    if(Date.now()<L.until){m.textContent=`잠시 뒤에 다시 시도하세요 (${Math.ceil((L.until-Date.now())/1000)}초).`;return}
+    if(tKey($('#tPw').value)===T_HASH){store.del(TLOCK_KEY);try{sessionStorage.setItem('timeHarmony.t',tToken(Date.now()+30*60000))}catch(err){}screenTeacher();return}
+    L.fails=(L.fails||0)+1; $('#tPw').value='';
+    if(L.fails%3===0){const sec=L.fails>=6?300:30;L.until=Date.now()+sec*1000;m.textContent=`${L.fails}번 틀렸어요. ${sec>=60?sec/60+'분':sec+'초'} 뒤에 다시 시도하세요.`}else m.textContent='비밀번호가 맞지 않아요.';
+    store.set(TLOCK_KEY,L)};
 }
 function screenTeacher(){
   if(!teacherOk()) return teacherGate();
   endGame();
   stopClip(); pageMode(); setEra('map');
   const h=store.get(HIST_KEY,[]);
-  const items=[];ERAS.forEach((e,i)=>e.script.forEach(n=>{if(n.t==='clue')items.push([e.name,n.q.replace(/^케이지: “|”$/g,''),n.o.find(o=>o.ok).x]);if(n.t==='c'&&n.quiz)items.push([e.name,n.qt,n.o.find(o=>o.ok).x])}));
-  items.push(['낭만','혁명 에튀드에 담긴 감정','분노와 격정'],['낭만','강아지 왈츠에 담긴 감정','장난스러움'],['낭만','왈츠의 박자','3박자']);
+  const items=[];ERAS.forEach((e,i)=>e.script.forEach(n=>{if(n.t==='clue')items.push([e.name,n.q.replace(/^케이지: “|”$/g,''),(n.o.find(o=>isAns(n.id,n.k,o.x))||{}).x]);if(n.t==='c'&&n.quiz)items.push([e.name,n.qt,(n.o.find(o=>isAns(n.quiz,n.k,o.x))||{}).x])}));
+  emoQuestions().forEach(q=>items.push(['낭만',q.qt,(q.o.find(o=>isAns(q.id,q.k,o))||'').split(' — ')[0]]));
   stage.innerHTML=`<section class="teacher"><div><p class="eyebrow">선생님 페이지</p><h2 style="font-size:32px">수업에서 이렇게 써 보세요</h2></div>
     <section><h3>수업 흐름 (약 45분)</h3><ol>
       <li>도입 7분: 프롤로그(비주얼 노벨)를 함께 보며 ‘음악이 사라진다면?’ 질문 던지기</li>
@@ -1951,7 +1988,7 @@ function screenTeacher(){
       <li>기록은 각 학생 기기의 브라우저에만 저장돼요. 결과는 수료증 화면에서 글로 복사해 제출받고, 위 ‘제출된 결과 확인’으로 확인번호를 확인하세요.</li></ul></section>
     <section><h3>문항과 정답</h3><div class="tbl-wrap"><table class="dark-table"><thead><tr><th>시대</th><th>문항</th><th>정답</th></tr></thead><tbody>${items.map(r=>`<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div></section>
     <section><h3>이 기기의 수료 기록 (${h.length}건)</h3>${h.length?`<div class="tbl-wrap"><table class="dark-table"><thead><tr><th>이름</th><th>학번·반</th><th>수료 일시</th><th>퀴즈</th><th>미니게임</th><th>균열</th><th>시간</th><th>회차</th><th>확인번호</th></tr></thead><tbody>${h.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td>${esc(r.date)}</td><td class="n">${r.pct}% (${r.q})</td><td class="n">${r.g}</td><td class="n">${r.glitch}</td><td class="n">${r.min}분</td><td class="n">${r.att||'—'}</td><td class="n">${esc(r.code||'—')}</td></tr>`).join('')}</tbody></table></div><div class="acts"><button class="btn" id="clr">기록 지우기</button></div>`:'<p class="muted" style="margin:0">아직 이 기기에서 수료한 기록이 없어요.</p>'}</section>
-    <div class="acts"><button class="btn primary" id="back">처음 화면으로</button></div></section>`;
+    <div class="acts"><button class="btn primary" id="back">잠그고 처음 화면으로</button></div></section>`;
   $('#oS').onclick=()=>{opts.silence='short';store.set(OPT_KEY,opts);screenTeacher()};
   $('#oF').onclick=()=>{opts.silence='full';store.set(OPT_KEY,opts);screenTeacher()};
   if($('#clr')) $('#clr').onclick=()=>confirmBox('이 기기의 수료 기록을 모두 지울까요?','지우기','취소',()=>{store.del(HIST_KEY);screenTeacher()});
@@ -1960,9 +1997,9 @@ function screenTeacher(){
     if(!blocks.length){$('#vOut').innerHTML='<p class="msg bad">붙여 넣은 결과가 없어요.</p>';return}
     $('#vOut').innerHTML=`<div class="tbl-wrap"><table class="dark-table"><thead><tr><th>결과</th><th>이름</th><th>학번·반</th><th>퀴즈</th><th>미니게임</th><th>회차</th><th>시간</th></tr></thead><tbody>${blocks.map(b=>{const r=parseResult(b);
       if(!r) return `<tr><td class="ox x">형식 오류</td><td colspan="6">${esc(b.split('\n')[0].slice(0,40))} — 줄이 빠졌거나 바뀌었어요</td></tr>`;
-      return `<tr><td class="ox ${r.ok?'o':'x'}">${r.ok?'확인됨':'불일치'}</td><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td class="n">${esc(r.pct)}% (${esc(r.q)})</td><td class="n">${esc(r.g)}</td><td class="n">${esc(r.att)}</td><td class="n">${esc(r.min)}분</td></tr>`}).join('')}</tbody></table></div>
+      return `<tr><td class="ox ${r.ok&&!r.t?'o':'x'}">${r.ok?(r.t?'확인됨 · 기록 변경 흔적':'확인됨'):'불일치'}</td><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td class="n">${esc(r.pct)}% (${esc(r.q)})</td><td class="n">${esc(r.g)}</td><td class="n">${esc(r.att)}</td><td class="n">${esc(r.min)}분</td></tr>`}).join('')}</tbody></table></div>
       <p class="muted" style="margin:6px 0 0">‘불일치’는 결과 글의 숫자나 이름이 게임이 만든 내용과 달라졌다는 뜻이에요.</p>`};
-  $('#back').onclick=screenTitle;
+  $('#back').onclick=()=>{teacherLock();screenTitle()};
 }
 
 /* 같은 게임이 다른 창(탭)에서도 열려 있으면 이 창을 멈춤 */
@@ -1989,6 +2026,7 @@ window.addEventListener('keydown',e=>{
 });
 
 probeAudio(); probeImages(); updateHud(); setPlayer(); screenTitle();
+})();
 </script>
 
 </body>
