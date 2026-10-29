@@ -535,10 +535,34 @@ const SAVE_KEY='timeHarmony.save.v2',HIST_KEY='timeHarmony.history.v1',OPT_KEY='
 let opts=Object.assign({silence:'short'},store.get(OPT_KEY,{}));
 function freshState(name,cls){return{name:name||'',cls:cls||'',energy:100,crystals:[0,0,0,0,0],docs:[0,0,0,0,0],quiz:{},games:{},glitches:0,started:Date.now(),finished:null,histSaved:false}}
 let S=Object.assign(freshState(),store.get(SAVE_KEY,{}));
-function save(){store.set(SAVE_KEY,S)}
-function recordQuiz(id,era,q,ok){if(!(id in S.quiz)){S.quiz[id]={era,q,ok:!!ok};save()}}
-function recordGame(id,era,label,ok){if(!(id in S.games)){S.games[id]={era,label,ok:!!ok};save()}}
+/* 같은 게임을 두 창(탭)에 띄워 한쪽에서 답을 미리 보는 것을 막음:
+   저장소에 먼저 기록된 '첫 답'이 있으면 그것을 따름 */
+function syncRecords(){
+  const f=store.get(SAVE_KEY,null); if(!f||f.started!==S.started) return;
+  S.quiz=Object.assign({},S.quiz,f.quiz||{}); S.games=Object.assign({},S.games,f.games||{});
+  S.crystals=S.crystals.map((v,i)=>v||(f.crystals||[])[i]||0); S.docs=S.docs.map((v,i)=>v||(f.docs||[])[i]||0);
+  S.glitches=Math.max(S.glitches,f.glitches||0); S.energy=Math.min(S.energy,f.energy??100);
+}
+function save(){syncRecords();store.set(SAVE_KEY,S)}
+function recordQuiz(id,era,q,ok){syncRecords();if(!(id in S.quiz)){S.quiz[id]={era,q,ok:!!ok};save()}}
+function recordGame(id,era,label,ok){syncRecords();if(!(id in S.games)){S.games[id]={era,label,ok:!!ok};save()}}
 const nm=t=>String(t).replace(/\{name\}/g,S.name||'너');
+const nmH=t=>String(t).replace(/\{name\}/g,esc(S.name||'너'));   // innerHTML에 넣을 때
+
+/* 확인번호: 결과 글을 고쳐 쓰면 번호가 맞지 않게 됨 */
+const SALT='TH|부흥|2026|cassette';
+function fnv(s,seed){let h=seed>>>0;for(const ch of s){h^=ch.codePointAt(0);h=Math.imul(h,16777619)>>>0}return h}
+function vcode(parts){const s=SALT+'|'+parts.join('|');return 'TH-'+fnv(s,2166136261).toString(36).toUpperCase().padStart(7,'0').slice(-7)+'-'+fnv(s,0x9e3779b9).toString(36).toUpperCase().padStart(4,'0').slice(-4)}
+const ATT_KEY='timeHarmony.attempts.v1';
+
+/* 이름 점검: 욕설·장난 이름, 기호 막기 */
+const BAD=['시발','씨발','씨빨','시벌','씨벌','ㅅㅂ','ㅆㅂ','tlqkf','씹','병신','븅신','빙신','ㅂㅅ','qudtls','개새','개색','개세','새끼','섀끼','쌔끼','ㅅㄲ','좆','존나','졸라','ㅈㄴ','지랄','ㅈㄹ','닥쳐','꺼져','미친','ㅁㅊ','또라이','엠창','느금','니애미','니엄마','애미','애비','에미','패드립','fuck','shit','bitch','sex','섹스','야동','변태','똥꼬','고추'];
+function badName(s){const t=String(s).toLowerCase().replace(/[\s._\-~!@#$%^&*+=|\\/:;'"`,?·ㆍ0-9]/g,'');return BAD.some(w=>t.includes(w))}
+const cleanName=s=>String(s).replace(/[<>()\[\]{}]/g,'').replace(/\s+/g,' ').trim();
+
+/* 화면을 떠날 때 미니게임이 남긴 키 입력·타이머 정리 */
+let gameCleanup=null;
+function endGame(){const f=gameCleanup;gameCleanup=null;if(f)try{f()}catch(e){}}
 
 /* =========================================================
    음원 파일 (audio 폴더) — 있으면 실제 녹음, 없으면 합성음
@@ -1224,28 +1248,35 @@ function confirmBox(msg,yes,no,onYes){
    타이틀
    ========================================================= */
 function screenTitle(){
-  stopClip(); pageMode(); E=null; V=null; setEra('title');
+  endGame(); stopClip(); pageMode(); E=null; V=null; setEra('title');
   const n=S.crystals.filter(Boolean).length, has=!!S.name;
+  let canSave=true; try{localStorage.setItem('timeHarmony.test','1');localStorage.removeItem('timeHarmony.test')}catch(e){canSave=false}
   stage.innerHTML=`<section class="title-screen">
     <div>
       <p class="eyebrow">서양음악사 시간 여행 비주얼 노벨</p>
       <h1>사라진 멜로디<small>타임 하모니</small></h1>
       <p class="lead">세상에서 음악이 하나둘 사라지고 있어요. 낡은 카세트 타임머신을 타고 중세부터 현대까지 다섯 작곡가를 만나, 하모니 크리스탈 5개를 모아 주세요.</p>
       <form id="fStart" class="start-form" autocomplete="off">
-        <label for="inName">이름</label><input id="inName" maxlength="20" required placeholder="예: 김하모">
-        <label for="inCls">학번·반</label><input id="inCls" maxlength="24" placeholder="선택 · 예: 2학년 3반 15번">
+        <label for="inName">이름</label><input id="inName" maxlength="12" required placeholder="실명 · 예: 김하모">
+        <label for="inCls">학번·반</label><input id="inCls" maxlength="20" required placeholder="예: 2학년 3반 15번">
         <button class="btn primary" type="submit">새로 시작</button>
+        <p class="msg bad" id="fMsg" style="grid-column:1/-1;margin:0" aria-live="polite"></p>
       </form>
+      ${canSave?'':'<p class="msg bad">이 브라우저는 진행 기록을 저장하지 못해요(시크릿 창이거나 저장이 막혀 있어요). 창을 닫으면 처음부터 다시 해야 해요.</p>'}
       ${has?`<button class="btn" id="btnCont">이어하기 — ${esc(S.name)} · 크리스탈 ${n}/5</button>`:''}
       <div class="title-links"><button id="tCodex">음악 도감</button><button id="tTeacher">선생님 페이지</button>${S.finished?'<button id="tCert">수료증 다시 보기</button>':''}</div>
     </div>
     <div class="cassette" aria-hidden="true"><div class="label"><b>타임 하모니 C-90</b><span>SIDE A · 1150 → 1952</span><i class="stripe"></i></div><div class="win"><i class="reel"></i><i class="reel"></i></div><div class="foot"></div></div>
   </section>`;
-  $('#fStart').onsubmit=e=>{e.preventDefault();const name=$('#inName').value.trim(),cls=$('#inCls').value.trim();if(!name)return;
-    const go=()=>{S=freshState(name,cls);save();updateHud();startPrologue()};
+  $('#fStart').onsubmit=e=>{e.preventDefault();const name=cleanName($('#inName').value),cls=cleanName($('#inCls').value),msg=$('#fMsg');
+    if(name.length<2){msg.textContent='이름을 두 글자 이상 실명으로 써 주세요.';$('#inName').focus();return}
+    if(!/[0-9]/.test(cls)){msg.textContent='학번·반에 숫자를 넣어 써 주세요. 예: 2학년 3반 15번';$('#inCls').focus();return}
+    if(badName(name)||badName(cls)){msg.textContent='수료증에 들어갈 이름이에요. 바른 말로 실명을 써 주세요.';$('#inName').select();return}
+    const go=()=>{let a=1;try{a=(+localStorage.getItem(ATT_KEY)||0)+1;localStorage.setItem(ATT_KEY,String(a))}catch(err){}
+      S=freshState(name,cls);S.attempt=a;save();updateHud();startPrologue()};
     if(has&&!S.finished) confirmBox(`${esc(S.name)}의 진행 기록(크리스탈 ${n}개)을 지우고 새로 시작할까요?`,'새로 시작','취소',go); else go();};
   if(has) $('#btnCont').onclick=()=>{if(S.finished) screenCert(); else screenMap()};
-  $('#tCodex').onclick=()=>openCodex(); $('#tTeacher').onclick=screenTeacher;
+  $('#tCodex').onclick=()=>openCodex(); $('#tTeacher').onclick=teacherGate;
   if(S.finished) $('#tCert').onclick=screenCert;
 }
 
@@ -1310,9 +1341,16 @@ function vnSay(who,text,cb,opt={}){
 }
 function vnChoices(prompt,list,onPick){
   const d=$('#dlg'); WAIT=null;
-  d.innerHTML=`<span class="nameplate me">${esc(S.name||'나')}</span>${prompt?`<p class="line prompt">${nm(prompt)}</p>`:''}<div class="choices">${list.map((x,k)=>`<button class="choice" data-k="${k}"><span class="k">${k+1}</span><span>${nm(x)}</span></button>`).join('')}</div>`;
-  $$('.choice',d).forEach(b=>b.onclick=()=>{LOG.push({n:S.name||'나',x:nm(list[+b.dataset.k])});onPick(+b.dataset.k)});
-  const f=d.querySelector('.choice'); if(f) f.focus({preventScroll:true});
+  d.innerHTML=`<span class="nameplate me">${esc(S.name||'나')}</span>${prompt?`<p class="line prompt">${nmH(prompt)}</p>`:''}<div class="choices">${list.map((x,k)=>`<button class="choice" data-k="${k}"><span class="k">${k+1}</span><span>${nmH(x)}</span></button>`).join('')}</div>`;
+  let picked=false;
+  $$('.choice',d).forEach(b=>b.onclick=()=>{if(picked)return;picked=true;LOG.push({n:S.name||'나',x:nm(list[+b.dataset.k])});onPick(+b.dataset.k)});
+  armChoices(d);
+}
+/* 보기가 뜬 직후 0.6초는 눌리지 않게: Enter·클릭 연타로 아무 답이나 골라지는 것 방지.
+   첫 보기에 자동으로 초점을 주지 않아서, Enter를 꾹 누르고 있어도 답이 골라지지 않음 */
+function armChoices(root){
+  const bs=$$('.choice',root); bs.forEach(b=>b.disabled=true); root.setAttribute('tabindex','-1'); root.focus({preventScroll:true});
+  setTimeout(()=>bs.forEach(b=>{if(!b.dataset.done)b.disabled=false}),600);
 }
 function vnFx(v){
   if(v==='flash'){const f=$('#vfx');f.classList.remove('flash');void f.offsetWidth;f.classList.add('flash');sfx('chime');return wait(500)}
@@ -1386,6 +1424,7 @@ const PRO=[
 ];
 let V=null;
 function startPrologue(){
+  endGame();
   stopClip(); closeOverlay(); E=null; setEra('title'); LOG=[];
   V={i:0,script:PRO};
   vnShell({skip:()=>{bgmStop();stopClip();V=null;screenMap()}});
@@ -1414,6 +1453,7 @@ async function vnRun(){
 const HINTS=['첫 목적지는 1150년경 독일의 수녀원이야. 그때는 악보가 거의 없어서 노래를 외워서 불렀대.','다음은 1717년 바이마르! 바흐 아저씨가 갇혀 있다는 신호가 와.','1802년 빈 근교야. 베토벤 선생님의 귀가… 서두르자.','1847년 파리. 비가 오는 밤이래. 쇼팽은 몸이 많이 약하니까 다정하게 대해 줘.','마지막은 1952년 미국! 이번엔… 소리가 없는 음악이라고?','크리스탈을 전부 모았어! 이제 음악을 되살리러 가자!'];
 function nextOpen(){const i=S.crystals.findIndex(x=>!x);return i<0?5:i}
 function screenMap(){
+  endGame();
   stopClip(); pageMode(); E=null; setEra('map'); updateHud();
   const nx=nextOpen();
   stage.innerHTML=`<section class="map">
@@ -1439,6 +1479,7 @@ const TC=[
   ()=>`<p class="lat">MAVERICK CONCERT HALL</p><p class="lat2">WOODSTOCK, N.Y. · FRIDAY, AUGUST 29, 1952<br>DAVID TUDOR, PIANO</p>`
 ];
 function chapter(i){
+  endGame();
   const e=ERAS[i]; pageMode(); setEra(i); sfx('rewind');
   stage.innerHTML=`<section class="tc-wrap"><div class="tc tc-${i}">${TC[i]()}<p class="eyebrow" style="color:inherit;opacity:.7;margin-top:10px">제${i+1}장 · ${e.en}</p><h2>${e.name}</h2><p class="theme">${e.theme}</p><p class="meta">${e.year} · ${e.place}</p><button class="btn" id="go">도착하기</button></div></section>`;
   $('#go').focus(); $('#go').onclick=()=>startEra(i);
@@ -1448,7 +1489,7 @@ function chapter(i){
    시대 장면 (비주얼 노벨)
    ========================================================= */
 let E=null;
-function startEra(i){E={i,era:ERAS[i],idx:0,res:ERAS[i].res0,removed:new Set(),shown:false};LOG=[];renderScene();run()}
+function startEra(i){endGame();E={i,era:ERAS[i],idx:0,res:ERAS[i].res0,removed:new Set(),shown:false};LOG=[];renderScene();run()}
 function moodOf(){return E.res<40?'sad':E.res>=70?'happy':'normal'}
 function renderScene(){
   const e=E.era; setEra(E.i);
@@ -1502,10 +1543,12 @@ function clue(n){
     <div class="cluebar"><button class="btn" id="cPlay">▶ 다시 듣기</button><span>${c.title}</span></div>
     <div class="choices">${orderOf(n).map((i,k)=>`<button class="choice" data-i="${i}"><span class="k">${k+1}</span><span>${n.o[i].x}</span></button>`).join('')}</div><div id="cEx"></div>`;
   $('#cPlay').onclick=()=>playClip(n.clip); playClip(n.clip);
+  armChoices(d);
   $$('.choice',d).forEach(b=>b.onclick=()=>{
+    if(b.dataset.done) return;
     const i=+b.dataset.i, ok=!!n.o[i].ok;
     recordQuiz(n.id,E.i,n.q.replace(/^케이지: “|”$/g,''),ok);
-    $$('.choice',d).forEach(x=>{x.disabled=true;if(n.o[+x.dataset.i].ok)x.classList.add('right')}); if(!ok) b.classList.add('wrong');
+    $$('.choice',d).forEach(x=>{x.disabled=true;x.dataset.done='1';if(n.o[+x.dataset.i].ok)x.classList.add('right')}); if(!ok) b.classList.add('wrong');
     if(ok){setRes(E.res+10,10);sfx('blip')} else sfx('buzz');
     $('#cEx').innerHTML=`<div class="explain"><b>${ok?'정답이에요!':'아쉬워요. 정답은 초록색 보기예요.'}</b> ${n.ex}</div><div class="box-acts" style="margin-top:10px"><button class="btn primary" id="go2">계속</button></div>`;
     $('#go2').onclick=advance; $('#go2').focus({preventScroll:true});
@@ -1608,7 +1651,7 @@ function gameCounterpoint(done){
   const LOCK=[{0:'C4',4:'C4'},{0:'G3',5:'C4'}];   // 첫 박·마지막 박은 바흐가 미리 적어 줌
   const ROWS=['C4','B3','A3','G3','F3','E3','D3','C3'];
   const KO={C:'도',D:'레',E:'미',F:'파',G:'솔',A:'라',B:'시'};
-  let r=0,low=[],tries=0,errBeats=new Set();
+  let r=0,low=[],tries=0,hinted=false,errBeats=new Set();
   const fresh=()=>{low=[];Object.entries(LOCK[r]).forEach(([b,n])=>low[+b]=n)};
   const locked=b=>b in LOCK[r];
   const LET='CDEFGAB';
@@ -1626,7 +1669,7 @@ function gameCounterpoint(done){
     $$('.cp-cell').forEach(c=>c.onclick=()=>{const b=+c.dataset.b;if(locked(b))return;low[b]=c.dataset.n;errBeats.clear();play2('one',[b]);
       const ok=info(up[b],low[b]).ok;draw(ok?'':`${b+1}번째 박이 빨간색이에요. 위 음과 부딪혀요. 다른 칸을 골라 보세요.`,ok?'':'bad')});
     $('#hear').onclick=()=>play2('all');
-    $('#hint').onclick=()=>{const b=up.findIndex((u,k)=>!low[k]);if(b<0)return;const good=ROWS.filter(n=>{const x=info(up[b],n);return x.ok&&!x.perfect});low[b]=good[Math.floor(Math.random()*good.length)]||ROWS.find(n=>info(up[b],n).ok);play2('one',[b]);draw(`힌트: ${b+1}번째 박에 ${low[b].replace(/\d/,'')}(${KO[low[b][0]]}) 음을 놓았어요. 3도나 6도는 특히 부드럽게 어울려요.`)};
+    $('#hint').onclick=()=>{const b=up.findIndex((u,k)=>!low[k]);if(b<0)return;hinted=true;const good=ROWS.filter(n=>{const x=info(up[b],n);return x.ok&&!x.perfect});low[b]=good[Math.floor(Math.random()*good.length)]||ROWS.find(n=>info(up[b],n).ok);play2('one',[b]);draw(`힌트: ${b+1}번째 박에 ${low[b].replace(/\d/,'')}(${KO[low[b][0]]}) 음을 놓았어요. 3도나 6도는 특히 부드럽게 어울려요.`)};
     $('#clear').onclick=()=>{fresh();errBeats.clear();draw()};
     $('#check').onclick=check;
   }
@@ -1643,11 +1686,11 @@ function gameCounterpoint(done){
       const du=Math.sign(midi(up[b])-midi(up[b-1])),dl=Math.sign(midi(low[b])-midi(low[b-1]));
       if(p.perfect&&c.perfect&&p.mod===c.mod&&du!==0&&du===dl){tip=` (바흐의 조언: ${b}→${b+1}번째 박처럼 두 선율이 ${c.mod===7?'5':'8'}도 간격 그대로 나란히 움직이면 한 목소리처럼 들려요. 다음엔 3도나 6도를 섞어 보시오.)`;break}}
     if(!errs.length){
-      recordGame('b-cp-'+r,1,`대위법 ${r+1}라운드`,tries===0); sfx('chime'); play2('all');
+      recordGame('b-cp-'+r,1,`대위법 ${r+1}라운드${hinted?' (힌트 사용)':''}`,tries===0&&!hinted); sfx('chime'); play2('all');
       draw((r===0?'바흐: “훌륭하오! 두 목소리가 따로 걸으면서도 함께 노래하는군.”':'바흐: “완벽한 대위법이오! 이걸로 쾨텐에서 쓸 곡의 실마리가 풀렸소.”')+tip,'ok');
       $('#check').disabled=true; $('#hint').disabled=true;
       const nx=document.createElement('button');nx.className='btn primary';nx.textContent=r===0?'다음 라운드':'계속';$('#msg').after(nx);
-      nx.onclick=()=>{r++;tries=0;errBeats.clear();if(r<2){fresh();draw()}else done()};
+      nx.onclick=()=>{r++;tries=0;hinted=false;errBeats.clear();if(r<2){fresh();draw()}else done()};
     } else {tries++;sfx('buzz');draw(`<ul class="errs">${errs.map(e=>`<li>${e}</li>`).join('')}</ul>`,'bad')}
   }
   fresh(); draw();
@@ -1690,7 +1733,7 @@ function gameRhythm(done){
   const kd=e=>{if(e.code==='Space'&&ready){e.preventDefault();if(!e.repeat)down()}};
   const ku=e=>{if(e.code==='Space'&&isDown){e.preventDefault();up()}};
   function cleanup(){window.removeEventListener('keydown',kd);window.removeEventListener('keyup',ku);timers.forEach(clearTimeout);stage.classList.remove('shake')}
-  window.addEventListener('keydown',kd);window.addEventListener('keyup',ku);
+  window.addEventListener('keydown',kd);window.addEventListener('keyup',ku);gameCleanup=cleanup;
   tap.addEventListener('pointerdown',e=>{e.preventDefault();try{tap.setPointerCapture(e.pointerId)}catch(_){}down()});
   tap.addEventListener('pointerup',up);tap.addEventListener('pointercancel',up);
   $('#watch').onclick=watch; drawTl();
@@ -1753,13 +1796,13 @@ function gameSilence(done){
       const md=['wind','rain','crowd'][m]; if(md!==mode){mode=md;if(A.cur&&A.cur.ctl)A.cur.ctl.mode=md;
         $('#cue').textContent=amb?['바람이 나뭇잎을 스친다…','빗방울이 지붕을 두드린다…','관객들이 웅성거리기 시작한다…'][m]:['지금 무슨 소리가 들리나요?','더 작은 소리도 찾아보세요…','내 숨소리도 들리나요?'][m]}
       if(el>=T) success();},200);
-    window.addEventListener('keydown',fail,true); window.addEventListener('pointerdown',fail,true);
+    window.addEventListener('keydown',fail,true); window.addEventListener('pointerdown',fail,true); gameCleanup=cleanup;
   }
   function cleanup(){clearInterval(iv);armed=false;window.removeEventListener('keydown',fail,true);window.removeEventListener('pointerdown',fail,true);stopClip()}
   function fail(e){ if(!armed) return; e.preventDefault(); e.stopPropagation(); cleanup(); failed++; sfx('buzz');
     setup(`<div class="explain" style="background:#2a1720;color:#ffd0c8"><b style="color:#ff9d8f">앗, 손이 움직였어요!</b> 케이지라면 “방금 그 소리도 음악이야!”라고 웃었을 거예요. 그래도 이번엔 끝까지 귀 기울여 볼까요?</div>`) }
   function success(){
-    cleanup(); recordGame('x-silence',4,'4분 33초 끝까지 듣기',failed===0); sfx('chime');
+    cleanup(); recordGame('x-silence',4,`4분 33초 끝까지 듣기 (${total()===273?'원곡 길이':'33초판'})`,failed===0); sfx('chime');
     const S2=['바람 소리','빗소리','사람들 웅성거림','내 숨소리','친구 목소리','컴퓨터·에어컨 소리','바깥 자동차 소리','새소리','내 심장 소리','시계 소리'];
     gameShell('미니게임 · 4분 33초의 비밀','연주 완료! 무엇이 들렸나요?','정답은 없어요. 들렸던 소리를 모두 골라 케이지에게 알려 주세요.',
       `<div class="panel" style="display:grid;gap:14px"><div class="chips">${S2.map((s,i)=>`<label><input type="checkbox" id="snd${i}"> ${s}</label>`).join('')}</div>
@@ -1777,7 +1820,7 @@ function gameSilence(done){
 function screenEnding(){
   pageMode(); setEra('map');
   if(!S.finished){S.finished=Date.now();save()}
-  if(!S.histSaved){const h=store.get(HIST_KEY,[]);const st=stats();h.unshift({name:S.name,cls:S.cls,date:new Date(S.finished).toLocaleString('ko-KR'),pct:st.pct,q:`${st.qOk}/${st.qN}`,g:`${st.gOk}/${st.gN}`,glitch:S.glitches,min:st.min});store.set(HIST_KEY,h.slice(0,200));S.histSaved=true;save()}
+  if(!S.histSaved){const h=store.get(HIST_KEY,[]);const st=stats();const R=resultInfo();h.unshift({name:S.name,cls:S.cls,date:new Date(S.finished).toLocaleString('ko-KR'),pct:st.pct,q:`${st.qOk}/${st.qN}`,g:`${st.gOk}/${st.gN}`,glitch:S.glitches,min:st.min,att:R.att,code:R.code});store.set(HIST_KEY,h.slice(0,200));S.histSaved=true;save()}
   const tracks=[['최애 아이돌 신곡','K-POP','#de86ad'],['보스전 BGM','게임 OST','#5f92e3'],['공부할 때 듣는 로파이','유튜브 음악','#86d8d3'],['졸업식 합창곡','학교 음악','#e8c35c']];
   stage.innerHTML=`<section class="ending"><p class="eyebrow">에필로그</p><h2>음악이 돌아왔다!</h2>
     <div style="display:flex;gap:8px">${ERAS.map((e,i)=>`<span style="filter:drop-shadow(0 0 10px ${ERA_HEX[i]})">${gem(ERA_HEX[i],1,44)}</span>`).join('')}</div>
@@ -1794,11 +1837,29 @@ function stats(){
   const q=Object.values(S.quiz),g=Object.values(S.games),qOk=q.filter(x=>x.ok).length,gOk=g.filter(x=>x.ok).length;
   return{q,g,qOk,gOk,qN:q.length,gN:g.length,pct:q.length?Math.round(qOk/q.length*100):0,min:Math.max(1,Math.round(((S.finished||Date.now())-S.started)/60000))};
 }
-function screenCert(){
-  stopClip(); pageMode(); E=null; setEra('map');
-  const st=stats(), n=S.crystals.filter(Boolean).length, fin=!!S.finished;
+/* 제출용 결과 글 + 확인번호. 줄 모양은 선생님 페이지의 ‘결과 확인’이 그대로 읽으므로 바꾸지 말 것 */
+const Q_TOTAL=13, G_TOTAL=7;
+function resultInfo(){
+  const st=stats(), n=S.crystals.filter(Boolean).length, fin=!!S.finished, docs=S.docs.filter(Boolean).length, att=S.attempt||1;
   const date=new Date(S.finished||Date.now()).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
-  const serial='TH-'+String(Math.abs([...(S.name+S.started)].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7))%100000).padStart(5,'0');
+  const code=vcode([S.name,S.cls,date,st.min,att,st.qOk,st.qN,st.gOk,st.gN,n,docs,S.glitches]);
+  const miss=fin&&(st.qN<Q_TOTAL||st.gN<G_TOTAL);
+  const text=`[타임 하모니 ${fin?'수료':'중간 기록'}] ${S.name} (${S.cls})\n날짜: ${date} / 플레이 약 ${st.min}분 / 도전 ${att}회차\n음악사 퀴즈 정답률: ${st.pct}% (${st.qOk}/${st.qN})\n미니게임 한 번에 성공: ${st.gOk}/${st.gN}\n하모니 크리스탈: ${n}/5 / 사료: ${docs}/5 / 타임라인 균열: ${S.glitches}회\n획득 카드: ${CARDS.filter(c=>S.crystals[c.era]).map(c=>c.name).join(', ')||'없음'}${miss?`\n※ 기록이 빠진 활동: 퀴즈 ${st.qN}/${Q_TOTAL}, 미니게임 ${st.gN}/${G_TOTAL}`:''}\n확인번호: ${code}`;
+  return {st,n,fin,docs,att,date,code,miss,text};
+}
+function parseResult(t){
+  const L=t.trim().split(/\r?\n/).map(s=>s.trim());
+  const m0=/^\[타임 하모니 (?:수료|중간 기록)\] (.+) \((.*)\)$/.exec(L[0]||''), m1=/^날짜: (.+?) \/ 플레이 약 (\d+)분 \/ 도전 (\d+)회차$/.exec(L[1]||'');
+  const m2=/정답률: (\d+)% \((\d+)\/(\d+)\)/.exec(L[2]||''), m3=/(\d+)\/(\d+)/.exec(L[3]||''), m4=/크리스탈: (\d)\/5 \/ 사료: (\d)\/5 \/ 타임라인 균열: (\d+)회/.exec(L[4]||''), mc=/확인번호: (TH-[0-9A-Z]+-[0-9A-Z]+)/.exec(t);
+  if(!(m0&&m1&&m2&&m3&&m4&&mc)) return null;
+  const qOk=+m2[2],qN=+m2[3], pctOk=+m2[1]===(qN?Math.round(qOk/qN*100):0);
+  const ok=pctOk&&vcode([m0[1],m0[2],m1[1],+m1[2],+m1[3],qOk,qN,+m3[1],+m3[2],+m4[1],+m4[2],+m4[3]])===mc[1];
+  return {ok,name:m0[1],cls:m0[2],pct:m2[1],q:`${qOk}/${qN}`,g:`${m3[1]}/${m3[2]}`,att:m1[3],min:m1[2]};
+}
+function screenCert(){
+  endGame();
+  stopClip(); pageMode(); E=null; setEra('map');
+  const R=resultInfo(), st=R.st, n=R.n, fin=R.fin, date=R.date, serial=R.code;
   const rows=ERAS.map((e,i)=>{const q=st.q.filter(x=>x.era===i),g=st.g.filter(x=>x.era===i);return`<tr><td>${e.name} · ${e.short}</td><td class="n">${q.filter(x=>x.ok).length}/${q.length}</td><td class="n">${g.filter(x=>x.ok).length}/${g.length}</td><td>${S.crystals[i]?'획득':'—'}</td></tr>`}).join('');
   stage.innerHTML=`<article class="cert" id="certDoc">
     <div class="cert-top"><span>${fin?'수료증':'탐험 기록 · 진행 중'}</span><span>No. ${serial}</span></div>
@@ -1808,7 +1869,7 @@ function screenCert(){
     <dl class="stats"><div><dt>음악사 퀴즈 정답률</dt><dd>${st.pct}%<small>${st.qOk}/${st.qN}</small></dd></div><div><dt>미니게임 한 번에 성공</dt><dd>${st.gOk}<small>/${st.gN}</small></dd></div><div><dt>하모니 크리스탈</dt><dd>${n}<small>/5</small></dd></div><div><dt>수집한 사료</dt><dd>${S.docs.filter(Boolean).length}<small>/5</small></dd></div></dl>
     <div class="cert-cards">${ERAS.map((e,i)=>{const c=CARDS.find(x=>x.era===i&&!x.bonus);return`<div class="${S.crystals[i]?'':'off'}">${gem(ERA_HEX[i],S.crystals[i],28)}<b>${c.name.split(' ').slice(-1)[0]}</b><span>${c.works[0]}</span></div>`}).join('')}</div>
     <div class="tbl-wrap"><table><thead><tr><th>시대</th><th>퀴즈 정답</th><th>미니게임 첫 성공</th><th>크리스탈</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="cert-foot"><span>${date}<br>플레이 시간 약 ${st.min}분 · 타임라인 균열 ${S.glitches}회</span><span class="seal">타임<br>하모니</span></div>
+    <div class="cert-foot"><span>${date}<br>플레이 시간 약 ${st.min}분 · 타임라인 균열 ${S.glitches}회 · 이 기기 ${R.att}번째 도전${R.miss?`<br><b style="color:#b23a2e">기록이 빠진 활동이 있어요 (퀴즈 ${st.qN}/${Q_TOTAL}, 미니게임 ${st.gN}/${G_TOTAL})</b>`:""}</span><span class="seal">타임<br>하모니</span></div>
   </article>
   <div class="after no-print">
     <div class="acts"><button class="btn primary" id="copy">결과를 글로 복사</button>${window.self===window.top?'<button class="btn" id="print">인쇄하기</button>':''}<button class="btn" id="codex">음악 도감</button>${fin?'':'<button class="btn" id="map">타임라인으로</button>'}<button class="btn" id="home">처음 화면</button></div>
@@ -1818,7 +1879,7 @@ function screenCert(){
       ${st.g.map(x=>`<tr><td>${ERAS[x.era].name}</td><td>[미니게임] ${esc(x.label)}</td><td class="ox ${x.ok?'o':'x'}">${x.ok?'한 번에':'재도전'}</td></tr>`).join('')}
     </tbody></table></div></details>
   </div>`;
-  const text=`[타임 하모니 ${fin?'수료':'중간 기록'}] ${S.name}${S.cls?' ('+S.cls+')':''}\n날짜: ${date} / 플레이 약 ${st.min}분\n음악사 퀴즈 정답률: ${st.pct}% (${st.qOk}/${st.qN})\n미니게임 한 번에 성공: ${st.gOk}/${st.gN}\n하모니 크리스탈: ${n}/5 / 사료: ${S.docs.filter(Boolean).length}/5 / 타임라인 균열: ${S.glitches}회\n획득 카드: ${CARDS.filter(c=>S.crystals[c.era]).map(c=>c.name).join(', ')||'없음'}\n확인번호: ${serial}`;
+  const text=R.text;
   $('#copy').onclick=()=>{const m=$('#cmsg');try{navigator.clipboard.writeText(text).then(()=>{m.className='msg ok';m.textContent='복사했어요. 선생님께 제출할 곳에 붙여 넣으세요.'},()=>fallback())}catch(e){fallback()}
     function fallback(){m.className='msg';m.innerHTML=`<textarea readonly style="width:100%;height:9em;background:var(--night);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px">${esc(text)}</textarea>`;const ta=m.querySelector('textarea');ta.focus();ta.select()}};
   if($('#print')) $('#print').onclick=()=>window.print();
@@ -1838,7 +1899,29 @@ function openCodex(after){
   $$('.card [data-k]').forEach(b=>b.onclick=()=>{const c=CARDS[+b.dataset.k];playClip(c.clip,c.clip==='ambient'?{limit:12}:{limit:60})});
   $('#cx').onclick=()=>{closeOverlay();if(typeof after==='function')after()};
 }
+/* 선생님 페이지 잠금: 정답표·기록 지우기를 학생이 못 보게. 비밀번호 자체는 코드에 없고 해시만 있음 */
+const T_HASH=678882161;   // 선생님 비밀번호의 해시값 (비밀번호를 바꾸려면 새 해시로 교체)
+const tKey=v=>fnv('teacher|'+String(v).trim()+'|'+SALT,2166136261);
+let tFails=0, tLockUntil=0;
+function teacherOk(){try{return sessionStorage.getItem('timeHarmony.t')==='1'}catch(e){return false}}
+function teacherGate(){
+  if(teacherOk()) return screenTeacher();
+  endGame(); stopClip(); pageMode(); E=null; V=null; setEra('map');
+  stage.innerHTML=`<section class="teacher" style="max-width:460px;margin-top:40px"><section>
+    <p class="eyebrow">선생님 확인</p><h3>선생님 비밀번호를 입력하세요</h3>
+    <p class="muted" style="margin:0">정답표와 기록 관리가 있는 페이지예요. 학생은 들어갈 수 없어요.</p>
+    <form id="tForm" class="acts" autocomplete="off"><input id="tPw" type="password" class="btn" style="flex:1;min-width:0;text-align:left" aria-label="비밀번호"><button class="btn primary">확인</button></form>
+    <p class="msg bad" id="tMsg" aria-live="polite"></p>
+    <div class="acts"><button class="btn" id="tBack">처음 화면으로</button></div></section></section>`;
+  $('#tPw').focus(); $('#tBack').onclick=screenTitle;
+  $('#tForm').onsubmit=e=>{e.preventDefault();const m=$('#tMsg');
+    if(Date.now()<tLockUntil){m.textContent=`잠시 뒤에 다시 시도하세요 (${Math.ceil((tLockUntil-Date.now())/1000)}초).`;return}
+    if(tKey($('#tPw').value)===T_HASH){try{sessionStorage.setItem('timeHarmony.t','1')}catch(err){}screenTeacher();return}
+    tFails++; $('#tPw').value=''; if(tFails>=3){tLockUntil=Date.now()+30000;tFails=0;m.textContent='3번 틀렸어요. 30초 뒤에 다시 시도하세요.'}else m.textContent='비밀번호가 맞지 않아요.'};
+}
 function screenTeacher(){
+  if(!teacherOk()) return teacherGate();
+  endGame();
   stopClip(); pageMode(); setEra('map');
   const h=store.get(HIST_KEY,[]);
   const items=[];ERAS.forEach((e,i)=>e.script.forEach(n=>{if(n.t==='clue')items.push([e.name,n.q.replace(/^케이지: “|”$/g,''),n.o.find(o=>o.ok).x]);if(n.t==='c'&&n.quiz)items.push([e.name,n.qt,n.o.find(o=>o.ok).x])}));
@@ -1857,18 +1940,44 @@ function screenTeacher(){
       </tbody></table></div></section>
     <section><h3>4분 33초 미션 길이</h3>
       <div class="seg" role="group" aria-label="4분 33초 길이"><button id="oS" aria-pressed="${opts.silence!=='full'}">수업용 33초</button><button id="oF" aria-pressed="${opts.silence==='full'}">원곡 4분 33초</button></div></section>
+    <section><h3>제출된 결과 확인</h3><p class="muted" style="margin:0">학생이 붙여 넣은 결과 글을 그대로 붙여 넣으세요. 여러 명을 한꺼번에 넣어도 돼요. 글을 고쳐 쓰면 확인번호가 맞지 않아요.</p>
+      <textarea id="vIn" class="btn" style="width:100%;min-height:9em;text-align:left;font-family:var(--f-mono);font-size:13px" placeholder="[타임 하모니 수료] …&#10;…&#10;확인번호: TH-…"></textarea>
+      <div class="acts"><button class="btn primary" id="vGo">확인하기</button></div><div id="vOut"></div></section>
     <section><h3>평가 기록 방식</h3><ul>
-      <li><b>음악사 퀴즈 정답률</b>: 음악 단서 5문항 + 대화 속 지식 문항 5개 + 쇼팽 감상 3문항, 모두 <b>첫 번째 답</b>만 기록해요 (총 13문항).</li>
-      <li><b>미니게임 한 번에 성공</b>: 네우마 3라운드, 대위법 2라운드, 운명 리듬, 4분 33초 — 총 7개.</li>
-      <li>기록은 각 학생 기기의 브라우저에만 저장돼요. 결과는 수료증 화면에서 글로 복사해 제출받아 주세요.</li></ul></section>
+      <li><b>음악사 퀴즈 정답률</b>: 음악 단서 5문항 + 대화 속 지식 문항 5개 + 쇼팽 감상 3문항, 모두 <b>첫 번째 답</b>만 기록해요 (총 13문항). 창을 두 개 띄워 한쪽에서 답을 미리 봐도 먼저 고른 답이 남아요.</li>
+      <li><b>미니게임 한 번에 성공</b>: 네우마 3라운드, 대위법 2라운드, 운명 리듬, 4분 33초 — 총 7개. 대위법에서 힌트를 쓰면 ‘한 번에 성공’으로 치지 않아요.</li>
+      <li><b>도전 회차</b>: 같은 기기에서 ‘새로 시작’한 횟수예요. 답을 외운 뒤 다시 시작하면 회차가 올라가요. 수료증과 결과 글에 함께 나와요.</li>
+      <li><b>기록이 빠진 활동</b>: 13문항·7개 미니게임 중 기록이 없는 것이 있으면 수료증에 빨간 글씨로 표시돼요(정상적으로 하면 생기지 않아요).</li>
+      <li>기록은 각 학생 기기의 브라우저에만 저장돼요. 결과는 수료증 화면에서 글로 복사해 제출받고, 위 ‘제출된 결과 확인’으로 확인번호를 확인하세요.</li></ul></section>
     <section><h3>문항과 정답</h3><div class="tbl-wrap"><table class="dark-table"><thead><tr><th>시대</th><th>문항</th><th>정답</th></tr></thead><tbody>${items.map(r=>`<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div></section>
-    <section><h3>이 기기의 수료 기록 (${h.length}건)</h3>${h.length?`<div class="tbl-wrap"><table class="dark-table"><thead><tr><th>이름</th><th>학번·반</th><th>수료 일시</th><th>퀴즈</th><th>미니게임</th><th>균열</th><th>시간</th></tr></thead><tbody>${h.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td>${esc(r.date)}</td><td class="n">${r.pct}% (${r.q})</td><td class="n">${r.g}</td><td class="n">${r.glitch}</td><td class="n">${r.min}분</td></tr>`).join('')}</tbody></table></div><div class="acts"><button class="btn" id="clr">기록 지우기</button></div>`:'<p class="muted" style="margin:0">아직 이 기기에서 수료한 기록이 없어요.</p>'}</section>
+    <section><h3>이 기기의 수료 기록 (${h.length}건)</h3>${h.length?`<div class="tbl-wrap"><table class="dark-table"><thead><tr><th>이름</th><th>학번·반</th><th>수료 일시</th><th>퀴즈</th><th>미니게임</th><th>균열</th><th>시간</th><th>회차</th><th>확인번호</th></tr></thead><tbody>${h.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td>${esc(r.date)}</td><td class="n">${r.pct}% (${r.q})</td><td class="n">${r.g}</td><td class="n">${r.glitch}</td><td class="n">${r.min}분</td><td class="n">${r.att||'—'}</td><td class="n">${esc(r.code||'—')}</td></tr>`).join('')}</tbody></table></div><div class="acts"><button class="btn" id="clr">기록 지우기</button></div>`:'<p class="muted" style="margin:0">아직 이 기기에서 수료한 기록이 없어요.</p>'}</section>
     <div class="acts"><button class="btn primary" id="back">처음 화면으로</button></div></section>`;
   $('#oS').onclick=()=>{opts.silence='short';store.set(OPT_KEY,opts);screenTeacher()};
   $('#oF').onclick=()=>{opts.silence='full';store.set(OPT_KEY,opts);screenTeacher()};
   if($('#clr')) $('#clr').onclick=()=>confirmBox('이 기기의 수료 기록을 모두 지울까요?','지우기','취소',()=>{store.del(HIST_KEY);screenTeacher()});
+  $('#vGo').onclick=()=>{
+    const blocks=$('#vIn').value.split(/(?=\[타임 하모니 )/).map(s=>s.trim()).filter(Boolean);
+    if(!blocks.length){$('#vOut').innerHTML='<p class="msg bad">붙여 넣은 결과가 없어요.</p>';return}
+    $('#vOut').innerHTML=`<div class="tbl-wrap"><table class="dark-table"><thead><tr><th>결과</th><th>이름</th><th>학번·반</th><th>퀴즈</th><th>미니게임</th><th>회차</th><th>시간</th></tr></thead><tbody>${blocks.map(b=>{const r=parseResult(b);
+      if(!r) return `<tr><td class="ox x">형식 오류</td><td colspan="6">${esc(b.split('\n')[0].slice(0,40))} — 줄이 빠졌거나 바뀌었어요</td></tr>`;
+      return `<tr><td class="ox ${r.ok?'o':'x'}">${r.ok?'확인됨':'불일치'}</td><td>${esc(r.name)}</td><td>${esc(r.cls)}</td><td class="n">${esc(r.pct)}% (${esc(r.q)})</td><td class="n">${esc(r.g)}</td><td class="n">${esc(r.att)}</td><td class="n">${esc(r.min)}분</td></tr>`}).join('')}</tbody></table></div>
+      <p class="muted" style="margin:6px 0 0">‘불일치’는 결과 글의 숫자나 이름이 게임이 만든 내용과 달라졌다는 뜻이에요.</p>`};
   $('#back').onclick=screenTitle;
 }
+
+/* 같은 게임이 다른 창(탭)에서도 열려 있으면 이 창을 멈춤 */
+window.addEventListener('storage',e=>{
+  if(e.key!==SAVE_KEY) return;
+  endGame(); stopClip(); bgmStop(); overlay.dataset.dismiss='0';
+  openOverlay(`<p class="eyebrow">창이 두 개 열려 있어요</p><h2 style="font-size:26px">다른 창에서 같은 게임이 진행되고 있어요</h2><p class="muted">게임은 한 창에서만 해 주세요. 이 창을 닫거나, 이 창에서 계속하려면 아래 버튼을 누르세요.</p><div class="acts"><button class="btn primary" id="reloadTab">이 창에서 이어하기</button></div>`,'confirm');
+  $('#reloadTab').onclick=()=>location.reload();
+});
+/* 시대 여행 중에 창을 닫거나 뒤로 가려 하면 한 번 확인 */
+window.addEventListener('beforeunload',e=>{if(E||V){e.preventDefault();e.returnValue=''}});
+/* 키를 꾹 누르고 있을 때 반복 입력 무시: 대사·보기가 저절로 넘어가거나 골라지지 않게 */
+window.addEventListener('keydown',e=>{
+  if(e.repeat&&(e.key==='Enter'||e.key===' '||/^[0-9]$/.test(e.key))&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();e.stopImmediatePropagation()}
+},true);
 
 /* 키보드: Enter·Space로 대사 넘기기, 숫자키로 보기 고르기, Esc로 닫기 */
 window.addEventListener('keydown',e=>{
